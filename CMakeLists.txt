@@ -6,20 +6,19 @@ project(btm-framework
 # Library target
 add_library(btm-framework)
 
+file(GLOB SRC_FILES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/src/*.c"
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/*.h"
+    "${CMAKE_SOURCE_DIR}/include/*.h"
+    "${CMAKE_SOURCE_DIR}/include/gl/*.h"
+    "${CMAKE_SOURCE_DIR}/include/math/*.h"
+    "${CMAKE_SOURCE_DIR}/include/utils/*.h"
+)
+
 target_sources(btm-framework
     PRIVATE
-        src/glew.c
-        src/app_core.cpp
-        src/app_core.h
-        src/common_dialogs.cpp
-        src/core_application.cpp
-        src/gl_font.cpp
-        src/gl_math.cpp
-        src/gl_mesh.cpp
-        src/gl_prim.cpp
-        src/gl_shaders.cpp
-        src/gl_timer.cpp
-        src/gl_window.cpp
+        ${SRC_FILES}
 )
 
 # Public headers
@@ -51,11 +50,27 @@ option(BTM_BUILD_EXAMPLES "Build example programs" ON)
 # -----------------------------
 # Examples
 # -----------------------------
-if(BTM_BUILD_EXAMPLES)
-	add_subdirectory(examples)
-    #add_executable(btm-example examples/minimal_window.cpp)
-    #target_link_libraries(btm-example PRIVATE btm::framework)
-endif()
+
+
+#collect examples
+file(GLOB SUBDIRS
+    LIST_DIRECTORIES true
+    "${CMAKE_CURRENT_SOURCE_DIR}/examples/*"
+)
+
+foreach(example ${SUBDIRS})
+    if (IS_DIRECTORY ${example})
+        # message ("------>Processing example: ${example}")
+        get_filename_component(example_name ${example} NAME)
+        # message ("------>------>Processing example: ${example_name}")
+        # add example as executable
+        file(GLOB example_sources CONFIGURE_DEPENDS
+            "${example}/*.cpp"
+        )
+        add_executable(${example_name} ${example_sources})
+        target_link_libraries(${example_name} PRIVATE btm-framework)
+    endif()
+endforeach()
 
 # -----------------------------
 # Install rules (future-proof)
