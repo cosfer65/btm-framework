@@ -5,7 +5,7 @@
 #include "mesh.h"
 #include "string_utils.h"
 
-namespace base_math {
+namespace btm_framework {
 
     template <typename T>
     struct NURBSSurface {
@@ -331,6 +331,6 @@ namespace base_math {
         return mesh;
     }
 
-} // namespace base_math
+} // namespace btm_framework
 
 #endif // __nurbs_core_h__

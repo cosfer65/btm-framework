@@ -15,7 +15,7 @@
 #include "geometry.h"
 #include "string_utils.h"
 
-namespace base_math {
+namespace btm_framework {
     template <typename T>
     struct TessellatedMesh {
         std::vector<basevector<T, 3>> vertices;
@@ -881,6 +881,6 @@ namespace base_math {
     mesh<T>* create_unit_torus() {
         return create_from_mesh_file<T, Tinput>("resources\\models\\unit_torus.prim");
     }
-} // namespace base_math
+} // namespace btm_framework
 
 #endif // __mesh_h__

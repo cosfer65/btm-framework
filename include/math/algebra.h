@@ -3,7 +3,7 @@
 
 #include <tuple>
 
-namespace base_math {
+namespace btm_framework {
     /**
      * @brief Solves the quadratic equation a*x^2 + b*x + c = 0.
      *

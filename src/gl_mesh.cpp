@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include "gl_mesh.h"
 
-namespace base_opengl {
+namespace btm_framework {
 
     /**
      * @brief Collects vertex, normal, and index data from a gl_mesh and stores it in a mesh_data structure.

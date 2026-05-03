@@ -3,7 +3,7 @@
 
 #include "matrix.h"
 
-namespace base_math {
+namespace btm_framework {
     /**
      * @brief A small, fixed-size N-component vector class template.
      *

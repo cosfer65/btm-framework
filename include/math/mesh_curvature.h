@@ -10,7 +10,7 @@
 
 #include "mesh.h"
 
-namespace base_math {
+namespace btm_framework {
     //  This function computes the Voronoi area weight of a vertex in a triangle of a half-edge mesh. 
     //  It’s a standard piece used in discrete differential geometry (e.g., mean curvature, Laplace-Beltrami).
     //  -  mesh: the half-edge mesh.

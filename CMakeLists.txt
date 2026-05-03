@@ -1,82 +1,77 @@
 cmake_minimum_required(VERSION 3.20)
-project(btm-framework 
+
+set(PROJECT_NAME "btm-framework")
+
+project(${PROJECT_NAME}
     LANGUAGES C CXX
 )
 
 # Library target
-add_library(btm-framework)
-
-file(GLOB SRC_FILES CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/src/*.c"
-    "${CMAKE_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_SOURCE_DIR}/src/*.h"
-    "${CMAKE_SOURCE_DIR}/include/*.h"
-    "${CMAKE_SOURCE_DIR}/include/gl/*.h"
-    "${CMAKE_SOURCE_DIR}/include/math/*.h"
-    "${CMAKE_SOURCE_DIR}/include/utils/*.h"
+add_library(${PROJECT_NAME}
+    STATIC
+    # Sources will be added later
 )
 
-target_sources(btm-framework
-    PRIVATE
-        ${SRC_FILES}
-)
+include(cmake/collect_framework_sources.cmake)
+collect_frm_sources(SRC_FILES)
+
+target_sources(${PROJECT_NAME} PRIVATE ${SRC_FILES})
 
 # Public headers
-target_include_directories(btm-framework
+set(PUBLIC_H)
+list(APPEND PUBLIC_H ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+file(GLOB SUBDIRS
+    LIST_DIRECTORIES true
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*"
+)
+
+foreach(subdir ${SUBDIRS})
+    if (IS_DIRECTORY ${subdir})
+        get_filename_component(dir_name ${subdir} NAME)
+        list(APPEND PUBLIC_H "${CMAKE_CURRENT_SOURCE_DIR}/include/${dir_name}")
+    endif()
+endforeach()
+
+target_include_directories(${PROJECT_NAME}
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/gl>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/math>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/utils>
+        $<BUILD_INTERFACE:${PUBLIC_H}>
         $<INSTALL_INTERFACE:include>
 )
+
 # C++ standard
-target_compile_features(btm-framework PUBLIC cxx_std_20)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 # C standard
-target_compile_features(btm-framework PUBLIC c_std_11)
+target_compile_features(${PROJECT_NAME} PUBLIC c_std_11)
+
+# required definitions
+add_definitions(-DGLEW_STATIC)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions(-DWIN32_LEAN_AND_MEAN)
 
 # Platform specifics (Windows)
 if (WIN32)
-    target_link_libraries(btm-framework PRIVATE opengl32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE opengl32)
 endif()
 
-add_library(btm::framework ALIAS btm-framework)
-
-# -----------------------------
-# Options
-# -----------------------------
-option(BTM_BUILD_EXAMPLES "Build example programs" ON)
-
-# -----------------------------
-# Examples
-# -----------------------------
-
-
-#collect examples
-file(GLOB SUBDIRS
-    LIST_DIRECTORIES true
-    "${CMAKE_CURRENT_SOURCE_DIR}/examples/*"
+# add dependencies
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    debug glfw_d
+    optimized glfw
 )
 
-foreach(example ${SUBDIRS})
-    if (IS_DIRECTORY ${example})
-        # message ("------>Processing example: ${example}")
-        get_filename_component(example_name ${example} NAME)
-        # message ("------>------>Processing example: ${example_name}")
-        # add example as executable
-        file(GLOB example_sources CONFIGURE_DEPENDS
-            "${example}/*.cpp"
-        )
-        add_executable(${example_name} ${example_sources})
-        target_link_libraries(${example_name} PRIVATE btm-framework)
-    endif()
-endforeach()
+add_library(btm::framework ALIAS ${PROJECT_NAME})
+
+include(cmake/glfw.cmake)
+
+include(cmake/collect_tutorials.cmake)
+collect_tutorials(tutorials ${PROJECT_NAME})
 
 # -----------------------------
 # Install rules (future-proof)
 # -----------------------------
-install(TARGETS btm-framework
-    EXPORT btm-framework-targets
+install(TARGETS ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}-targets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -84,9 +79,9 @@ install(TARGETS btm-framework
 
 install(DIRECTORY include/ DESTINATION include)
 
-install(EXPORT btm-framework-targets
-    FILE btm-framework-config.cmake
+install(EXPORT ${PROJECT_NAME}-targets
+    FILE ${PROJECT_NAME}-config.cmake
     NAMESPACE btm::
-    DESTINATION lib/cmake/btm-framework
+    DESTINATION lib/cmake/${PROJECT_NAME}
 )
 

@@ -4,7 +4,7 @@
 #include "base_definitions.h"
 #include "vector.h"
 
-namespace base_math {
+namespace btm_framework {
     /**
      * @brief Quaternion class for representing rotations and orientations.
      *

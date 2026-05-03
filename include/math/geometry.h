@@ -5,7 +5,7 @@
 #include "vector.h"
 #include "algebra.h"
 
-namespace base_math {
+namespace btm_framework {
     /**
      * @brief Calculates the unit normal vector of a plane defined by three points in counter-clockwise order.
      * @tparam T Numeric type.

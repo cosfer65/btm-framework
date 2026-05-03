@@ -1,6 +1,6 @@
 #include "gl_math.h"
 
-namespace base_opengl {
+namespace btm_framework {
     //////////////////////////////////////////////////////////////////////////
     // view matrices, column major as OpenGL expects them
 
@@ -174,4 +174,4 @@ namespace base_opengl {
         ortho(o, l, r, b, t, n, f);
         return o;
     }
-}  // namespace base_opengl
+}  // namespace btm_framework

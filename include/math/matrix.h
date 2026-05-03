@@ -10,7 +10,7 @@
 
 #include "base_definitions.h"
 
-namespace base_math {
+namespace btm_framework {
     ///////////////////////////////////////////////////////////////////////////////////
     // matrices are row-major
     // assuming a 4x4 matrix, it is laid out as:
