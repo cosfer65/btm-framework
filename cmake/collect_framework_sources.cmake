@@ -3,9 +3,9 @@ function (collect_frm_sources SRC_FILES)
     set (LOCAL_FILES)
     # colect source files in src directory and its subdirectories
     file(GLOB LOCAL_FILES CONFIGURE_DEPENDS
-        "${CMAKE_SOURCE_DIR}/src/*.c"
-        "${CMAKE_SOURCE_DIR}/src/*.cpp"
-        "${CMAKE_SOURCE_DIR}/src/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
     )
 
     file(GLOB SUBDIRS
@@ -26,7 +26,7 @@ function (collect_frm_sources SRC_FILES)
 
     # colect header files in include directory and its subdirectories
     file(GLOB LOCAL_HEADERS CONFIGURE_DEPENDS
-        "${CMAKE_SOURCE_DIR}/include/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
     )
     list(APPEND LOCAL_FILES ${LOCAL_HEADERS})
 

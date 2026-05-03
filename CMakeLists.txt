@@ -79,9 +79,9 @@ install(TARGETS ${PROJECT_NAME}
 
 install(DIRECTORY include/ DESTINATION include)
 
-install(EXPORT ${PROJECT_NAME}-targets
-    FILE ${PROJECT_NAME}-config.cmake
-    NAMESPACE btm::
-    DESTINATION lib/cmake/${PROJECT_NAME}
-)
+#install(EXPORT ${PROJECT_NAME}-targets
+#    FILE ${PROJECT_NAME}-config.cmake
+#    NAMESPACE btm::
+#    DESTINATION lib/cmake/${PROJECT_NAME}
+#)
 

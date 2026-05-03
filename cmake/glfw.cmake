@@ -1,5 +1,5 @@
 #generate imported target for glfw
-set(EXTERNAL_LIB_DIR "${CMAKE_SOURCE_DIR}/external")
+set(EXTERNAL_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 find_library(GLFW3_LIBRARY_DEBUG
     NAMES glfw3.lib
     PATHS "${EXTERNAL_LIB_DIR}/glfw/lib/debug"
@@ -16,7 +16,7 @@ find_library(GLFW3_LIBRARY
 message(STATUS "Found GLFW library: ${GLFW3_LIBRARY}")
 add_library(glfw STATIC IMPORTED)
 
-set(EXTERNAL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glfw/include")
+set(EXTERNAL_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include")
 set_target_properties(glfw PROPERTIES
     IMPORTED_LOCATION "${GLFW3_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${EXTERNAL_INCLUDE_DIR}"
