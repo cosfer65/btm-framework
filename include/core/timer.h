@@ -2,6 +2,8 @@
 #ifndef __timer_h__
 #define __timer_h__
 
+#include <windows.h>
+
 namespace btm_framework {
 
     /**

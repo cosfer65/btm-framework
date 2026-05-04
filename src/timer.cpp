@@ -1,6 +1,6 @@
 #define NOMINMAX
 #include <windows.h>
-#include "btm_core.h"
+#include "glew.h"
 #include "timer.h"
 
 namespace btm_framework {

@@ -1,4 +1,4 @@
-#include "btm_core.h"
+#include "glew.h"
 #include "shaders.h"
 #include <fstream>
 #include <sstream>
@@ -32,7 +32,7 @@ namespace btm_framework {
             }
             catch (...)
             {
-#ifdef WIN32
+#if defined(WIN32) && defined(DEBUG)
                 OutputDebugString("error");
                 OutputDebugString((*it).shader_fname.c_str());
 #endif

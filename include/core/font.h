@@ -1,6 +1,7 @@
 /* fonts for text output */
 #ifndef __font_h__
 #define __font_h__
+#include <windows.h>
 #include "prim.h"
 #include <map>
 

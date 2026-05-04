@@ -1,8 +1,8 @@
 #include <string>
 #include <iostream>
+#include "glew.h"
 
 #include "window.h"
-#include "btm_core.h"
 #include "timer.h"
 
 #include "application.h"

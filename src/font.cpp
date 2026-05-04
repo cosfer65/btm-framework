@@ -1,4 +1,4 @@
-#include "btm_core.h"
+#include "glew.h"
 #include "font.h"
 
 // works ONLY in Windows

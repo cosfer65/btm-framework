@@ -1,5 +1,5 @@
 #include <windows.h>
-#include "btm_core.h"
+#include "glew.h"
 #include "window.h"
 #include "application.h"
 
