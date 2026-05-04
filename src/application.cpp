@@ -6,7 +6,7 @@
 #include "timer.h"
 
 #include "application.h"
-#include "glfw3.h"
+//#include "glfw3.h"
 
 namespace btm_framework
 {

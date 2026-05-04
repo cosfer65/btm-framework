@@ -54,15 +54,7 @@ if (WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE opengl32)
 endif()
 
-# add dependencies
-target_link_libraries(${PROJECT_NAME} PRIVATE 
-    debug glfw_d
-    optimized glfw
-)
-
 add_library(btm::framework ALIAS ${PROJECT_NAME})
-
-include(cmake/glfw.cmake)
 
 include(cmake/collect_tutorials.cmake)
 collect_tutorials(tutorials ${PROJECT_NAME})
@@ -78,10 +70,3 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 install(DIRECTORY include/ DESTINATION include)
-
-#install(EXPORT ${PROJECT_NAME}-targets
-#    FILE ${PROJECT_NAME}-config.cmake
-#    NAMESPACE btm::
-#    DESTINATION lib/cmake/${PROJECT_NAME}
-#)
-

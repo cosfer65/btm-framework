@@ -33,10 +33,10 @@ function (collect_tutorials TUTORIALS_DIRECTORY FRAMEWORK_NAME)
             endif()
             target_link_libraries(${NAME} PRIVATE ${FRAMEWORK_NAME})
 
-            target_link_libraries(${NAME} PRIVATE 
-                debug glfw_d
-                optimized glfw
-            )
+            #   target_link_libraries(${NAME} PRIVATE 
+            #       debug glfw_d
+            #       optimized glfw
+            #   )
             set_target_properties(${NAME} PROPERTIES
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtime"
                 VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/runtime"
