@@ -33,7 +33,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int nCmdShow){
     glApplication the_app;
 
     // initialize the framework
-    init();
+    init_framework();
 
     // create the main application window and show it
     FrameWindow* pFrame = create_main_window(GetModuleHandle(nullptr), "BTM_WindowClass", "TheMeshProject");

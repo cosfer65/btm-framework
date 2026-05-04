@@ -66,7 +66,7 @@ namespace btm_framework
     winApplication *GetApp();
     HINSTANCE get_hInstance();
     void set_hInstance(HINSTANCE hInstance);
-    bool init();
+    bool init_framework();
     FrameWindow *create_main_window(HINSTANCE hInstance, LPCSTR className, LPCSTR title);
     bool run_application();
     bool pollEvents();

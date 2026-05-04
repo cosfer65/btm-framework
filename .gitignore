@@ -3,3 +3,6 @@
 /out
 /runtime/Debug
 /runtime/Release
+/runtime/Debug
+runtime/Debug/rendering_window.exe
+runtime/Debug/rendering_window.pdb

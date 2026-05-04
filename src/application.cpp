@@ -6,7 +6,6 @@
 #include "timer.h"
 
 #include "application.h"
-//#include "glfw3.h"
 
 namespace btm_framework
 {
@@ -63,21 +62,23 @@ namespace btm_framework
         return pFrame;
     }
 
-    static void registerClass(UINT style, std::string className, WNDPROC wndProc)
+    static void RegisterFrameWindowClass(HINSTANCE hInst, LPCSTR className, UINT style, WNDPROC wndProc)
     {
         WNDCLASSEX m_wcex;
         ZeroMemory(&m_wcex, sizeof(WNDCLASSEX));
         m_wcex.cbSize = sizeof(WNDCLASSEX);
         m_wcex.style = style;
         m_wcex.lpfnWndProc = wndProc;
-        m_wcex.hInstance = GetModuleHandle(nullptr);
+        m_wcex.hInstance = hInst;
         m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
         m_wcex.hbrBackground = (HBRUSH)(COLOR_APPWORKSPACE);
-        m_wcex.lpszClassName = className.c_str();
+        m_wcex.lpszClassName = className;
+        // allow the application to customize the window class (e.g. set icons, menu, etc.)
+        theApp->precreate_window(hInst, &m_wcex);
         RegisterClassEx(&m_wcex);
     }
 
-    static bool RegisterWindowClass(HINSTANCE hInst, LPCSTR className, UINT style, WNDPROC wndProc)
+    static bool RegisterViewWindowClass(HINSTANCE hInst, LPCSTR className, UINT style, WNDPROC wndProc)
     {
         WNDCLASS wc = {0};
         wc.style = style;
@@ -114,17 +115,19 @@ namespace btm_framework
                                      pFrame // lpCreateParams -> 'this' for FrameWindow
         );
 
-        return pFrame ? pFrame : nullptr;
-    }
-
-    bool init()
-    {
-        RegisterWindowClass(GetModuleHandle(nullptr), "BTM_WindowClass", CS_HREDRAW | CS_VREDRAW, cWindow::StaticWndProc);
-        RegisterWindowClass(GetModuleHandle(nullptr), "ViewWindowClass", CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS, cWindow::StaticWndProc);
-        // initialize wrangler library
+        // after the window is created and OpenGL context is ready, we can initialize GLEW and application-specific resources
+        // initialize wrangler library 
         glewInit();
         // initialize application-specific resources
         theApp->init_application();
+
+        return pFrame ? pFrame : nullptr;
+    }
+
+    bool init_framework()
+    {
+        RegisterFrameWindowClass(GetModuleHandle(nullptr), "BTM_WindowClass", CS_HREDRAW | CS_VREDRAW, cWindow::StaticWndProc);
+        RegisterViewWindowClass(GetModuleHandle(nullptr), "ViewWindowClass", CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS, cWindow::StaticWndProc);
         return true;
     }
 
