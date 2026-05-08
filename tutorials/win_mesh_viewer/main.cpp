@@ -11,7 +11,6 @@
 // but you can also use the full namespace when calling functions and classes.
 // using namespace btm_framework;
 
-
 void create_application_menu(btm_framework::FrameWindow* pFrame, btm_framework::Menu& menu)
 {
     // Create top-level menus
@@ -62,7 +61,6 @@ void render(const btm_framework::MeshRenderer<float>& renderer)
 
     glViewport(0, 0, width, height);
 
-    // btm_framework::MeshRenderer<float> renderer(mesh);
     renderer.render();
 
     btm_framework::end_render();
@@ -83,14 +81,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int nCmdShow)
     create_mesh(mesh);
     // and then create a renderer for the mesh, which will be used in the render loop to draw the mesh on the screen.
     btm_framework::MeshRenderer<float> renderer(mesh);
-    //renderer.render();
 
     btm_framework::start_timer();
     btm_framework::get_elapsed_time();
 
     while (btm_framework::pollEvents())
     {
-        float fElapsed = (float)btm_framework:: get_elapsed_time();
+        float fElapsed = (float)btm_framework::get_elapsed_time();
+        // Here we can update our application state based on the elapsed time, user input, or other factors.
+
+        // and we conclude with the screen update by calling the render function, 
+        // which will use the MeshRenderer to draw the mesh on the screen.
         render(renderer);
 
         {
