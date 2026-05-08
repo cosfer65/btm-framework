@@ -2,8 +2,10 @@
 #ifndef __font_h__
 #define __font_h__
 #include <windows.h>
-#include "prim.h"
+#include <string>
 #include <map>
+
+#include "prim.h"
 
 #define ALIGN_CENTER 0
 #define ALIGN_LEFT   1

@@ -2,9 +2,6 @@
 #define __gl_math_h__
 
 #include "vector.h"
-
-using namespace btm_framework;
-
 namespace btm_framework {
     //////////////////////////////////////////////////////////////////////////
     /**

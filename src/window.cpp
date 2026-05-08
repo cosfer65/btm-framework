@@ -1,6 +1,7 @@
 #include <windows.h>
 #include "glew.h"
 #include "window.h"
+#include "gl_context.h"
 #include "application.h"
 
 namespace btm_framework
@@ -136,103 +137,46 @@ namespace btm_framework
     }
 
     ////////////////////////////////////////////////////////////////
-    ViewWindow::ViewWindow() {}
+    glView::glView() : cWindow() {}
 
-    LRESULT ViewWindow::OnPaint()
+    LRESULT glView::OnCreate()
     {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hWnd, &ps);
-
-        RECT rc;
-        GetClientRect(hWnd, &rc);
-
-        char buf[128];
-        strcpy(buf, "SDI View");
-
-        DrawText(hdc, buf, -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
-
-        EndPaint(hWnd, &ps);
-        return 0;
-    }
-
-    ////////////////////////////////////////////////////////////////
-    glViewWindow::glViewWindow() : ViewWindow() {}
-
-    bool glViewWindow::SetupPixelFormat()
-    {
-        PIXELFORMATDESCRIPTOR pfd = {
-            sizeof(PIXELFORMATDESCRIPTOR),
-            1,
-            PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-            PFD_TYPE_RGBA,
-            32,
-            0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0,
-            32, // depth buffer
-            32, // stencil buffer
-            0,
-            PFD_MAIN_PLANE,
-            0, 0, 0, 0};
-
-        int pf = ChoosePixelFormat(hDC, &pfd);
-        if (!pf)
-            return false;
-
-        if (!SetPixelFormat(hDC, pf, &pfd))
-            return false;
-
-        return true;
-    }
-
-    LRESULT glViewWindow::OnCreate()
-    {
-        hDC = GetDC(hWnd);
-        if (!SetupPixelFormat())
-            return -1;
-
-        hGLRC = wglCreateContext(hDC);
-        wglMakeCurrent(hDC, hGLRC);
+        pGLContext = new GLContext(hWnd);
 
         return 0;
     }
-    LRESULT glViewWindow::OnPaint()
+    LRESULT glView::OnPaint()
     {
         PAINTSTRUCT ps;
         BeginPaint(hWnd, &ps);
         EndPaint(hWnd, &ps);
         return 0;
     }
-    LRESULT glViewWindow::OnDestroy()
+    LRESULT glView::OnDestroy()
     {
-        if (hGLRC)
+        if (pGLContext)
         {
-            wglMakeCurrent(nullptr, nullptr);
-            wglDeleteContext(hGLRC);
-            hGLRC = nullptr;
-        }
-        if (hDC)
-        {
-            ReleaseDC(hWnd, hDC);
-            hDC = nullptr;
+            delete pGLContext;
+            pGLContext = nullptr;
         }
         return 0;
     }
 
-    void glViewWindow::begin_render()
+    void glView::begin_render()
     {
-        wglMakeCurrent(hDC, hGLRC);
+        pGLContext->begin_render();
     }
-    void glViewWindow::end_render()
+    void glView::end_render()
     {
-        SwapBuffers(hDC);
+        pGLContext->end_render();
     }
 
-    void glViewWindow::render()
+    void glView::render()
     {
-        if (!hWnd || !hDC || !hGLRC)
+        if (!pGLContext)
             return;
 
-        begin_render();
+        pGLContext->begin_render();
 
         RECT rc;
         GetClientRect(hWnd, &rc);
@@ -260,7 +204,7 @@ namespace btm_framework
         glVertex2f(0.0f, 0.5f);
         glEnd();
 
-        end_render();
+        pGLContext->end_render();
     }
 
     FrameWindow::FrameWindow(HINSTANCE hInstance) : hInst(hInstance) {}
@@ -272,26 +216,41 @@ namespace btm_framework
             delete pView;
             pView = nullptr;
         }
+        else {
+            if (pGLContext)
+            {
+                delete pGLContext;
+                pGLContext = nullptr;
+            }
+
+        }
         PostQuitMessage(0);
         return 0;
     }
 
     LRESULT FrameWindow::OnCreate()
     {
-        // Create the view object
-        pView = get_view();
+        if (config.create_view) {
+            // Create the view object
+            pView = get_view();
 
-        HWND hView = CreateWindowEx(
-            0, "ViewWindowClass", nullptr, WS_CHILD | WS_VISIBLE,
-            0, 0, 0, 0,
-            hWnd, nullptr, hInst,
-            pView // lpCreateParams -> 'this' for ViewWindow
-        );
+            HWND hView = CreateWindowEx(
+                0, "ViewWindowClass", nullptr, WS_CHILD | WS_VISIBLE,
+                0, 0, 0, 0,
+                hWnd, nullptr, hInst,
+                pView // lpCreateParams -> 'this' for glView
+            );
 
-        if (!hView)
-        {
-            MessageBox(hWnd, "Failed to create view window", "Error", MB_ICONERROR);
-            return -1;
+            if (!hView)
+            {
+                MessageBox(hWnd, "Failed to create view window", "Error", MB_ICONERROR);
+                return -1;
+            }
+        }
+        else {
+            pGLContext = new GLContext(hWnd);
+
+            
         }
         return 0;
     }
@@ -302,6 +261,11 @@ namespace btm_framework
         {
             MoveWindow(pView->hWnd, 0, 0, cx, cy, TRUE);
             pView->OnSize(cx, cy);
+        }
+        else if (pGLContext)
+        {
+            pGLContext->width() = cx;
+            pGLContext->height() = cy;
         }
         return 0;
     }

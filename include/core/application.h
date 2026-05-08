@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.h" // force link of library
+#include <windows.h>
 #include "window.h"
 
 namespace btm_framework
@@ -16,10 +16,14 @@ namespace btm_framework
 
         virtual void precreate_window(HINSTANCE hInstance, WNDCLASSEX *m_wcex) {}
         virtual FrameWindow *getMainWindow(HINSTANCE hInstance);
-        virtual cWindow *get_active_view()
-        {
+        virtual cWindow *get_active_view() {
             if (pFrame)
                 return pFrame->get_view();
+            return nullptr;
+        }
+        virtual GLContext *get_gl_context() {
+            if (pFrame)
+                return pFrame->get_gl_context();
             return nullptr;
         }
         virtual void init_application() {}
@@ -67,7 +71,13 @@ namespace btm_framework
     HINSTANCE get_hInstance();
     void set_hInstance(HINSTANCE hInstance);
     bool init_framework();
-    FrameWindow *create_main_window(HINSTANCE hInstance, LPCSTR className, LPCSTR title);
+    FrameWindow *create_main_window(bool has_view, int width, int height, LPCSTR title);
     bool run_application();
     bool pollEvents();
+
+    // use default window drawing
+    bool begin_render();
+    void end_render();
+    GLContext* get_current_gl_context();
+
 } // namespace btm_framework

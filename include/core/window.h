@@ -59,10 +59,15 @@ namespace btm_framework
             hWnd = nullptr;
             return 0;
         }
-        virtual LRESULT OnMinimize(int wid, int hei) { return 0; }
-        virtual LRESULT OnMinimized(int wid, int hei) { return 0; }
-        virtual LRESULT OnRestored(int wid, int hei)
-        {
+        virtual LRESULT OnMinimize(int wid, int hei) { 
+            OnSize(wid, hei);
+            return 0; 
+        }
+        virtual LRESULT OnMinimized(int wid, int hei) { 
+            OnSize(wid, hei);
+            return 0; 
+        }
+        virtual LRESULT OnRestored(int wid, int hei) {
             OnSize(wid, hei);
             return 0;
         }
@@ -85,28 +90,20 @@ namespace btm_framework
         virtual void onKeyUp(int key) {}
     };
 
-    class ViewWindow : public cWindow
+    class GLContext;
+    class glView : public cWindow
     {
-    public:
-        ViewWindow();
-        virtual ~ViewWindow() {}
-
-        virtual LRESULT OnPaint();
-    };
-
-    class glViewWindow : public ViewWindow
-    {
-        bool SetupPixelFormat();
+        GLContext *pGLContext = nullptr;
 
     public:
-        HGLRC hGLRC = nullptr;
-        HDC hDC = nullptr;
-
         void begin_render();
         void end_render();
 
-        glViewWindow();
-        virtual ~glViewWindow() {}
+        glView();
+        virtual ~glView() {}
+        GLContext* get_gl_context(){
+            return pGLContext;
+        }
 
         virtual LRESULT OnCreate();
         virtual LRESULT OnPaint();
@@ -117,37 +114,36 @@ namespace btm_framework
 
     class FrameWindow : public cWindow
     {
+        GLContext* pGLContext = nullptr;
     public:
+        struct Config
+        {
+            bool create_view = true;
+            int width = 1280;
+            int height = 720;
+            std::string title = "TheMeshProject";
+        } config;
         HINSTANCE hInst = nullptr;
-        ViewWindow *pView = nullptr;
+        glView *pView = nullptr;
 
         FrameWindow(HINSTANCE hInstance);
 
         virtual LRESULT OnCreate();
-        virtual ViewWindow *get_view()
-        {
-            if (pView == nullptr)
-            {
-                pView = new ViewWindow();
+        virtual glView *get_view() {
+            if (pView == nullptr) {
+                pView = new glView();
             }
             return pView;
+        }
+
+        GLContext* get_gl_context() {
+            if (pView)
+                return pView->get_gl_context();
+            else
+                return pGLContext;
         }
 
         virtual LRESULT OnSize(int cx, int cy);
         LRESULT OnDestroy();
-    };
-
-    class glFrameWindow : public FrameWindow
-    {
-    public:
-        glFrameWindow(HINSTANCE hInstance) : FrameWindow(hInstance) {}
-        virtual ViewWindow *get_view() override
-        {
-            if (pView == nullptr)
-            {
-                pView = new glViewWindow();
-            }
-            return pView;
-        }
     };
 } // namespace btm_framework

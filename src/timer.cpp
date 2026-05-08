@@ -4,20 +4,85 @@
 #include "timer.h"
 
 namespace btm_framework {
-
     /**
-     * @brief Returns a pointer to the global timer instance.
-     * 
-     * This function provides access to a static instance of the gl_timer class,
-     * ensuring a single timer is used throughout the application.
-     * 
-     * @return gl_timer* Pointer to the global timer instance.
+     * @class gl_timer
+     * @brief High-resolution timer for measuring elapsed time and system time.
+     *
+     * This class provides functionality to start, stop, reset, and advance a timer,
+     * as well as retrieve absolute and elapsed times with high precision.
+     * Platform-specific implementations are provided for Windows and POSIX systems.
      */
-    gl_timer* get_global_timer()
+    class gl_timer
     {
-        static gl_timer timer;
-        return &timer;
-    }
+    public:
+        /**
+         * @brief Constructs a new gl_timer object and initializes the timer.
+         */
+        gl_timer();
+
+        /**
+         * @brief Resets the timer to its initial state.
+         */
+        void reset();
+
+        /**
+         * @brief Starts or resumes the timer.
+         */
+        void start();
+
+        /**
+         * @brief Stops or pauses the timer.
+         */
+        void stop();
+
+        /**
+         * @brief Advances the timer by 0.1 seconds.
+         */
+        void advance();
+
+        /**
+         * @brief Gets the absolute system time in seconds.
+         * @return The absolute system time as a double.
+         */
+        double get_absolute_time();
+
+        /**
+         * @brief Gets the current timer value in seconds.
+         * @return The current timer value as a double.
+         */
+        double get_time();
+
+        /**
+         * @brief Gets the time elapsed since the last call to get_elapsed_time().
+         * @return The elapsed time in seconds as a double.
+         */
+        double get_elapsed_time();
+
+        /**
+         * @brief Checks if the timer is currently stopped.
+         * @return True if the timer is stopped, false otherwise.
+         */
+        bool is_stopped();
+
+    protected:
+        /// Indicates whether the timer is currently stopped.
+        bool m_bTimerStopped;
+
+        /// Indicates if QueryPerformanceFrequency is used.
+        bool m_bUsingQPF;
+        /// Ticks per second for QueryPerformanceFrequency.
+        LONGLONG m_llQPFTicksPerSec;
+
+        /// Time when the timer was stopped.
+        LONGLONG m_llStopTime;
+        /// Last elapsed time value.
+        LONGLONG m_llLastElapsedTime;
+        /// Base time for the timer.
+        LONGLONG m_llBaseTime;
+    };
+
+
+
 
     /**
      * @brief Constructs a gl_timer object and initializes timer state.
@@ -198,4 +263,31 @@ namespace btm_framework {
     {
         return m_bTimerStopped;
     }
+
+    static gl_timer timer;
+    void reset_timer(){
+        timer.reset();
+    }
+    void start_timer(){
+        timer.start();
+    }
+    void stop_timer(){
+        timer.stop();
+    }
+    void advance_timer(){
+        timer.advance();
+    }
+    double get_absolute_time(){
+        return timer.get_absolute_time();
+    }
+    double get_time(){
+        return timer.get_time();
+    }
+    double get_elapsed_time(){
+        return timer.get_elapsed_time();
+    }
+    bool is_timer_stopped(){
+        return timer.is_stopped();
+    }
+
 }

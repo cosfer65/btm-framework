@@ -1,11 +1,7 @@
-#include "glew.h"
+#include <windows.h>
+#include <stdio.h>
 
 #include "utils.h"
-#include "glew.h"
-#include "timer.h"
-#include "shaders.h"
-
-using namespace btm_framework;
 
 void debug_out(const char* prompt, float var)
 {

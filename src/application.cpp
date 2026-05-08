@@ -6,6 +6,7 @@
 #include "timer.h"
 
 #include "application.h"
+#include "gl_context.h"
 
 namespace btm_framework
 {
@@ -57,7 +58,7 @@ namespace btm_framework
     {
         if (pFrame == nullptr)
         {
-            pFrame = new glFrameWindow(hInstance);
+            pFrame = new FrameWindow(hInstance);
         }
         return pFrame;
     }
@@ -91,43 +92,61 @@ namespace btm_framework
         return RegisterClass(&wc) != 0;
     }
 
-    FrameWindow *create_main_window(HINSTANCE hInstance, LPCSTR className, LPCSTR title)
+    FrameWindow *create_main_window(bool has_view, int width, int height, LPCSTR title)
     {
-        FrameWindow *pFrame = theApp->getMainWindow(hInstance);
+        RegisterFrameWindowClass(GetModuleHandle(nullptr), "BTM_WindowClass", CS_HREDRAW | CS_VREDRAW, cWindow::StaticWndProc);
+        RegisterViewWindowClass(GetModuleHandle(nullptr), "ViewWindowClass", CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS, cWindow::StaticWndProc);
+
+        FrameWindow *pFrame = theApp->getMainWindow(GetModuleHandle(nullptr));
         if (!pFrame)
         {
             MessageBox(nullptr, "Failed to create main window", "Error", MB_ICONERROR);
             return nullptr;
         }
+        pFrame->config.create_view = has_view;
+        pFrame->config.width = width;
+        pFrame->config.height = height;
+        pFrame->config.title = title;
 
         DWORD windowStyle = WS_OVERLAPPEDWINDOW;     // define our window style
         DWORD windowExtendedStyle = WS_EX_APPWINDOW; // define the window's extended style
 
-        RECT windowRect = {0, 0, 800, 600}; // define our window coordinates
+        RECT windowRect = {0, 0, width, height}; // define our window coordinates
 
         // adjust window, account for window borders
         AdjustWindowRectEx(&windowRect, windowStyle, 0, windowExtendedStyle);
 
-        HWND hFrame = CreateWindowEx(0, className, title,
+        HWND hFrame = CreateWindowEx(0, "BTM_WindowClass", title,
                                      WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
                                      windowRect.right - windowRect.left, windowRect.bottom - windowRect.top,
-                                     nullptr, nullptr, hInstance,
+                                     nullptr, nullptr, GetModuleHandle(nullptr),
                                      pFrame // lpCreateParams -> 'this' for FrameWindow
         );
+        pFrame->hWnd = hFrame;
 
-        // after the window is created and OpenGL context is ready, we can initialize GLEW and application-specific resources
-        // initialize wrangler library 
-        glewInit();
-        // initialize application-specific resources
-        theApp->init_application();
+        if (pFrame->hWnd)
+        {
+            // after the window is created and OpenGL context is ready, we can initialize GLEW and application-specific resources
+            // initialize wrangler library
+            glewInit();
+            // initialize application-specific resources
+            theApp->init_application();
 
-        return pFrame ? pFrame : nullptr;
+            // show the window
+            pFrame->show_window(SW_SHOWNORMAL);
+        }
+        else
+        {
+            delete pFrame;
+            MessageBox(nullptr, "Failed to create main window", "Error", MB_ICONERROR);
+            return nullptr;
+        }
+
+        return pFrame;
     }
 
     bool init_framework()
     {
-        RegisterFrameWindowClass(GetModuleHandle(nullptr), "BTM_WindowClass", CS_HREDRAW | CS_VREDRAW, cWindow::StaticWndProc);
-        RegisterViewWindowClass(GetModuleHandle(nullptr), "ViewWindowClass", CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS, cWindow::StaticWndProc);
         return true;
     }
 
@@ -144,6 +163,25 @@ namespace btm_framework
             DispatchMessage(&msg);
         }
         return running;
+    }
+
+    // helper functions for rendering
+    // the application can call these functions in its render() method to perform rendering using the current OpenGL context
+    bool begin_render(){
+        GLContext* context = theApp->get_gl_context();
+        if (context) {
+            context->begin_render();
+            return true;
+        }
+        return false;        
+    }
+    void end_render(){
+        GLContext* context = theApp->get_gl_context();
+        if (context)
+            context->end_render();
+    }
+    GLContext* get_current_gl_context(){
+        return theApp->get_gl_context();
     }
 
 } // namespace btm_framework
