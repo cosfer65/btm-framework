@@ -10,7 +10,7 @@
 
 #include "base_definitions.h"
 
-namespace btm_framework {
+namespace btm {
     ///////////////////////////////////////////////////////////////////////////////////
     // matrices are row-major
     // assuming a 4x4 matrix, it is laid out as:
@@ -18,7 +18,6 @@ namespace btm_framework {
     //  4  5  6  7
     //  8  9 10 11
     // 12 13 14 15
-
 
     template <typename T, size_t ROWS, size_t COLS>
     class basematrix {
@@ -392,6 +391,7 @@ namespace btm_framework {
 
 #endif
 
+    typedef basematrix<float, 2, 2> fmat2;
     typedef basematrix<float, 3, 3> fmat3;
     typedef basematrix<float, 4, 4> fmat4;
     typedef basematrix<float, 2, 1> fmat2x1;

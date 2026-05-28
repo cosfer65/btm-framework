@@ -6,15 +6,16 @@ project(${PROJECT_NAME}
     LANGUAGES C CXX
 )
 
+option(BTM_BUILD_EXAMPLES "Build example programs" ON)
+
 # Library target
 add_library(${PROJECT_NAME}
     STATIC
-    # Sources will be added later
 )
 
+#collect source and header files
 include(cmake/collect_framework_sources.cmake)
 collect_frm_sources(SRC_FILES)
-
 target_sources(${PROJECT_NAME} PRIVATE ${SRC_FILES})
 
 # Public headers
@@ -51,13 +52,15 @@ add_definitions(-DWIN32_LEAN_AND_MEAN)
 
 # Platform specifics (Windows)
 if (WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE opengl32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE user32 gdi32 opengl32)
 endif()
 
 add_library(btm::framework ALIAS ${PROJECT_NAME})
 
-include(cmake/collect_tutorials.cmake)
-collect_tutorials(tutorials ${PROJECT_NAME})
+# Examples
+if (BTM_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 
 # -----------------------------
 # Install rules (future-proof)

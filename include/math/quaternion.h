@@ -4,22 +4,22 @@
 #include "base_definitions.h"
 #include "vector.h"
 
-namespace btm_framework {
+namespace btm {
     /**
      * @brief Quaternion class for representing rotations and orientations.
      *
-     * Inherits from basevector<T, 4> and provides quaternion operations.
+     * Inherits from basevec4<T> and provides quaternion operations.
      * The quaternion is stored as (x, y, z, w), where w is the scalar part.
      *
      * @tparam T Numeric type (float, double, etc.)
      */
     template <typename T>
-    class quaternion : public basevector<T, 4> {
+    class quaternion : public basevec4<T> {
     public:
         /**
          * @brief Default constructor. Initializes all components to zero.
          */
-        quaternion() : basevector<T, 4>(0) {
+        quaternion() : basevec4<T>(0) {
         }
 
         /**
@@ -29,7 +29,7 @@ namespace btm_framework {
          * @param j Y (j) component.
          * @param k Z (k) component.
          */
-        quaternion(T scalar, T i, T j, T k) : basevector<T, 4>(i, j, k, scalar) {
+        quaternion(T scalar, T i, T j, T k) : basevec4<T>(i, j, k, scalar) {
         }
 
         /**
@@ -42,10 +42,10 @@ namespace btm_framework {
 
         /**
          * @brief Gets the vector (x, y, z) part of the quaternion.
-         * @return basevector<T, 3> containing (x, y, z).
+         * @return basevec3<T> containing (x, y, z).
          */
-        basevector<T, 3> get_vector(void) const {
-            return basevector<T, 3>(this->x(), this->y(), this->z());
+        basevec3<T> get_vector(void) const {
+            return basevec3<T>(this->x(), this->y(), this->z());
         }
 
         /**
@@ -165,7 +165,7 @@ namespace btm_framework {
      *       non-uniform scaling artifacts.
      */
     template <typename T>
-    inline quaternion<T> fromAxisAngle(const basevector<T, 3>& axis, T angle) {
+    inline quaternion<T> fromAxisAngle(const basevec3<T>& axis, T angle) {
         T s = T(std::sin(angle * T(0.5)));
         return quaternion<T>(T(std::cos(angle * T(0.5))), axis.x() * s, axis.y() * s, axis.z() * s);
     }
@@ -178,7 +178,7 @@ namespace btm_framework {
      * @return Resulting quaternion.
      */
     template <typename T>
-    quaternion<T> operator * (const basevector<T, 3>& v, const quaternion<T>& q) {
+    quaternion<T> operator * (const basevec3<T>& v, const quaternion<T>& q) {
         return quaternion(-(q.x() * v.x() + q.y() * v.y() + q.z() * v.z()),
             q.w() * v.x() + q.z() * v.y() - q.y() * v.z(),
             q.w() * v.y() + q.x() * v.z() - q.z() * v.x(),
@@ -192,7 +192,7 @@ namespace btm_framework {
      * @return Resulting quaternion.
      */
     template <typename T>
-    quaternion<T> operator * (const quaternion<T>& q, const basevector<T, 3>& v) {
+    quaternion<T> operator * (const quaternion<T>& q, const basevec3<T>& v) {
         return    quaternion(-(q.x() * v.x() + q.y() * v.y() + q.z() * v.z()),
             q.w() * v.x() + q.y() * v.z() - q.z() * v.y(),
             q.w() * v.y() + q.z() * v.x() - q.x() * v.z(),
@@ -212,18 +212,18 @@ namespace btm_framework {
     /**
      * @brief Gets the rotation axis from a quaternion.
      * @param q The quaternion.
-     * @return Normalized axis as basevector<T, 3>.
+     * @return Normalized axis as basevec3<T>.
      */
     template <typename T>
-    basevector<T, 3> q_get_axis(const quaternion<T>& q) {
-        basevector<T, 3> v;
+    basevec3<T> q_get_axis(const quaternion<T>& q) {
+        basevec3<T> v;
         T m;
 
         v = q.get_vector();
         m = v.length();
 
         if (m <= TOLLERANCE<T>)
-            return basevector<T, 3>();
+            return basevec3<T>();
         else
             return v / m;
     }
@@ -246,7 +246,7 @@ namespace btm_framework {
      * @return Rotated vector.
      */
     template <typename T>
-    basevector<T, 3> qv_rotate_inv(const quaternion<T>& q, const basevector<T, 3>& v) {
+    basevec3<T> qv_rotate_inv(const quaternion<T>& q, const basevec3<T>& v) {
         return ((~q) * v * q).get_vector();
     }
 
@@ -257,7 +257,7 @@ namespace btm_framework {
      * @return Rotated vector.
      */
     template <typename T>
-    basevector<T, 3> qv_rotate(const quaternion<T>& q, const basevector<T, 3>& v) {
+    basevec3<T> qv_rotate(const quaternion<T>& q, const basevec3<T>& v) {
         return (q * v * (~q)).get_vector();
     }
 
@@ -302,14 +302,14 @@ namespace btm_framework {
     /**
      * @brief Converts a quaternion to Euler angles (in radians).
      * @param q The quaternion.
-     * @return basevector<T, 3> containing (roll, pitch, yaw).
+     * @return basevec3<T> containing (roll, pitch, yaw).
      */
     template <typename T>
-    basevector<T, 3> make_euler_angles_from_q(const quaternion<T>& q) {
+    basevec3<T> make_euler_angles_from_q(const quaternion<T>& q) {
         double r11, r21, r31, r32, r33, r12, r13;
         double q00, q11, q22, q33;
         double tmp;
-        basevector<T, 3> u;
+        basevec3<T> u;
 
         q00 = q.w() * q.w();
         q11 = q.x() * q.x();
@@ -346,7 +346,7 @@ namespace btm_framework {
      * @param angle Angle in radians.
      */
     template <typename T>
-    void rotate_vector(basevector<T, 3>& v, const basevector<T, 3>& rotation_axis, T angle) {
+    void rotate_vector(basevec3<T>& v, const basevec3<T>& rotation_axis, T angle) {
         // build the rotation quaternion
         quaternion<T> q;
         q.w() = (T)cos(angle / 2);
@@ -364,7 +364,7 @@ namespace btm_framework {
      * @param orientation Rotation quaternion.
      */
     template <typename T>
-    void calculateTransformationMatrix(basematrix<T, 4, 4>& transformMatrix, const basevector<T, 3>& position, const quaternion<T>& orientation)
+    void calculateTransformationMatrix(basematrix<T, 4, 4>& transformMatrix, const basevec3<T>& position, const quaternion<T>& orientation)
     {
         transformMatrix[0] = 1 - 2 * orientation.y() * orientation.y() -
             2 * orientation.z() * orientation.z();
@@ -402,8 +402,8 @@ namespace btm_framework {
      *         r20 r21 r22 ]
      *
      * The function assumes a rotation order consistent with the rest of this
-     * module (yaw–pitch–roll convention) and returns the three Euler angles
-     * (stored in a `basevector<T, 3>`) in radians:
+     * module (yawï¿½pitchï¿½roll convention) and returns the three Euler angles
+     * (stored in a `basevec3<T>`) in radians:
      *
      *   - `e.x()` : yaw angle
      *   - `e.y()` : pitch angle
@@ -411,7 +411,7 @@ namespace btm_framework {
      *
      * It computes the pitch from element r02 and then derives yaw and roll
      * from the remaining elements. When the cosine of the pitch angle is
-     * close to zero (i.e., pitch is near ±90 degrees), the function detects
+     * close to zero (i.e., pitch is near ï¿½90 degrees), the function detects
      * gimbal lock and switches to an alternative computation path to avoid
      * numerical instability. In this singular case, roll is set to zero and
      * yaw is derived from r10 and r11.
@@ -419,7 +419,7 @@ namespace btm_framework {
      * @tparam T Numeric scalar type (e.g., `float`, `double`).
      * @param R Pointer to an array of at least 9 elements representing a 3x3
      *          rotation matrix in row-major layout.
-     * @return `basevector<T, 3>` containing the Euler angles in radians:
+     * @return `basevec3<T>` containing the Euler angles in radians:
      *         `(yaw, pitch, roll)`.
      *
      * @note The input matrix is assumed to be a valid rotation matrix
@@ -429,7 +429,7 @@ namespace btm_framework {
     template <typename T>
     inline basevector<T,3> eulerAnglesFromRotationMatrix(const T* R)
     {
-        basevector<T, 3> e;
+        basevec3<T> e;
 
         // Extract matrix elements for readability
         const T r00 = R[0], r01 = R[1], r02 = R[2];
@@ -450,7 +450,7 @@ namespace btm_framework {
         }
         else
         {
-            // Gimbal lock: pitch is ±90 degrees
+            // Gimbal lock: pitch is ï¿½90 degrees
             e.x() = T(std::atan2(r10, r11));
             e.z() = T(0.0);
         }

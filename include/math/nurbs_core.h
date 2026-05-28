@@ -5,21 +5,21 @@
 #include "mesh.h"
 #include "string_utils.h"
 
-namespace btm_framework {
+namespace btm {
 
     template <typename T>
     struct NURBSSurface {
-        std::vector<basevector<T, 4>> controlPoints;
+        std::vector<basevec4<T>> controlPoints;
         std::vector<T> knotsU, knotsV;
         int degreeU;
         int degreeV;
 
         int numCtrlPtsU, numCtrlPtsV;
         basematrix<T, 4, 4> world_matrix;
-        basevector<T, 3> translation;
-        basevector<T, 3> rotation; // Euler angles in radians
-        basevector<T, 3> scale;
-        const basevector<T, 4>& ctrl(int i, int j) const {
+        basevec3<T> translation;
+        basevec3<T> rotation; // Euler angles in radians
+        basevec3<T> scale;
+        const basevec4<T>& ctrl(int i, int j) const {
             return controlPoints[j * numCtrlPtsU + i];
         }
         T getWeight(int i, int j) const {
@@ -127,7 +127,7 @@ namespace btm_framework {
                     T y = std::stod(tokens[4]);
                     T z = std::stod(tokens[5]);
                     T w = std::stod(tokens[6]);
-                    surf->controlPoints.push_back(basevector<T, 4>(x, y, z, w));
+                    surf->controlPoints.push_back(basevec4<T>(x, y, z, w));
                 }
             }
             mdl_file.close();
@@ -206,9 +206,9 @@ namespace btm_framework {
     // Full NURBS surface evaluation
     // ------------------------------------------------------------
     template <typename T>
-    basevector<T, 3> evaluateSurface(
+    basevec3<T> evaluateSurface(
         T u_norm, T v_norm,
-        const std::vector<basevector<T, 4>>& ctrl,
+        const std::vector<basevec4<T>>& ctrl,
         int nu, int nv,
         int orderU, int orderV,
         const std::vector<T>& knotU,
@@ -234,7 +234,7 @@ namespace btm_framework {
             for (int j = 0; j < nv; ++j) {
                 T Mv = bsplineBasis(j, q, v, knotV);
 
-                const basevector<T, 4>& P = ctrl[i * nv + j];
+                const basevec4<T>& P = ctrl[i * nv + j];
                 T w = P.w();
 
                 T B = Nu * Mv * w;
@@ -263,7 +263,7 @@ namespace btm_framework {
             for (int j = 0; j <= samplesV; ++j) {
                 T v = T(j) / T(samplesV);
 
-                basevector<T, 3> p;
+                basevec3<T> p;
 
                 if (i == 0)      p = evaluateSurface(0.0, v, surf.controlPoints,
                     surf.numCtrlPtsU, surf.numCtrlPtsV,
@@ -287,7 +287,7 @@ namespace btm_framework {
                         surf.degreeU, surf.degreeV,
                         surf.knotsU, surf.knotsV);
                 /*
-                basevector<T, 3> p = evaluateSurface(
+                basevec3<T> p = evaluateSurface(
                     u, v,
                     surf.controlPoints,
                     surf.numCtrlPtsU, surf.numCtrlPtsV,
@@ -297,7 +297,7 @@ namespace btm_framework {
                 */
 
                 mesh->vertices.push_back(p);
-                mesh->normals.push_back(basevector<T, 3>(0, 1, 0)); // Placeholder normal
+                mesh->normals.push_back(basevec3<T>(0, 1, 0)); // Placeholder normal
             }
         }
 
@@ -331,6 +331,6 @@ namespace btm_framework {
         return mesh;
     }
 
-} // namespace btm_framework
+} // namespace btm
 
 #endif // __nurbs_core_h__

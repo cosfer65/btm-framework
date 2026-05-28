@@ -2,8 +2,9 @@
 #define __algebra_h__
 
 #include <tuple>
+#include "matrix.h"
 
-namespace btm_framework {
+namespace btm {
     /**
      * @brief Solves the quadratic equation a*x^2 + b*x + c = 0.
      *

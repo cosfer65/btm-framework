@@ -4,10 +4,10 @@
 #include <math.h>
 
 /**
- * @namespace btm_framework
+ * @namespace btm
  * @brief Contains mathematical constants and utility functions for numerical computations.
  */
-namespace btm_framework {
+namespace btm {
     /**
      * @brief Mathematical constant PI (�).
      * @tparam T Numeric type.

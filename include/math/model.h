@@ -6,7 +6,7 @@
 
 #include "mesh.h"
 
-namespace btm_framework {
+namespace btm {
     // template <typename T>
     // typedef std::map<std::string, half_edge_mesh<T>*> model;
 

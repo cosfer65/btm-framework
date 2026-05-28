@@ -6,3 +6,5 @@
 /runtime/Debug
 runtime/Debug/rendering_window.exe
 runtime/Debug/rendering_window.pdb
+*.exe
+*.pdb
