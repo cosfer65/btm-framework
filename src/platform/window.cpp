@@ -16,37 +16,48 @@ namespace btm
         switch (message)
         {
         case WM_MOUSEMOVE:
+            GetApp()->onMouseMove(x, y, extra);
             onMouseMove(x, y, extra);
             break;
         case WM_LBUTTONDOWN:
+            GetApp()->onLMouseDown(x, y, extra);
             onLMouseDown(x, y, extra);
             break;
         case WM_LBUTTONUP:
+            GetApp()->onLMouseUp(x, y, extra);
             onLMouseUp(x, y, extra);
             break;
         case WM_LBUTTONDBLCLK:
+            GetApp()->onLDblClick(x, y, extra);
             onLDblClick(x, y, extra);
             break;
         case WM_RBUTTONDOWN:
+            GetApp()->onRMouseDown(x, y, extra);
             onRMouseDown(x, y, extra);
             break;
         case WM_RBUTTONUP:
+            GetApp()->onRMouseUp(x, y, extra);
             onRMouseUp(x, y, extra);
             break;
         case WM_RBUTTONDBLCLK:
+            GetApp()->onRDblClick(x, y, extra);
             onRDblClick(x, y, extra);
             break;
         case WM_MBUTTONDOWN:
+            GetApp()->onMMouseDown(x, y, extra);
             onMMouseDown(x, y, extra);
             break;
         case WM_MBUTTONUP:
+            GetApp()->onMMouseUp(x, y, extra);
             onMMouseUp(x, y, extra);
             break;
         case WM_MBUTTONDBLCLK:
+            GetApp()->onMDblClick(x, y, extra);
             onMDblClick(x, y, extra);
             break;
 
         case WM_MOUSEWHEEL:
+            GetApp()->onMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam), extra);
             onMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam), extra);
             break;
         }
@@ -84,6 +95,7 @@ namespace btm
         case WM_KEYDOWN:
             if ((wParam >= 0) && (wParam <= 255))
             { // Is Key (wParam) In A Valid Range?
+                GetApp()->onKeyDown((int)wParam); // Set The Selected Key (wParam) To True
                 onKeyDown((int)wParam);
                 return 0;
             }
@@ -92,7 +104,8 @@ namespace btm
         case WM_KEYUP:
             if ((wParam >= 0) && (wParam <= 255))
             {                         // Is Key (wParam) In A Valid Range?
-                onKeyUp((int)wParam); // Set The Selected Key (wParam) To False
+                GetApp()->onKeyUp((int)wParam); // Set The Selected Key (wParam) To False
+                onKeyUp((int)wParam);
                 return 0;             // Return
             }
             break;

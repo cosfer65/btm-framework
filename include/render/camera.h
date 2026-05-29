@@ -44,7 +44,30 @@ namespace btm {
 
         /// \brief Bottom coordinate of the viewport within the window.
         int bottom = 0; ///< Viewport position within the window.
+
+        bool dragging = false;           ///< Indicates whether the user is currently dragging with the mouse (for panning)
+        int last_mouse_x = 0;            ///< Last recorded mouse X position (used for calculating deltas during dragging)
+        int last_mouse_y = 0;            ///< Last recorded mouse Y position (used for calculating deltas during dragging)
+
     public:
+
+        void begin_drag(int x, int y) {
+            dragging = true;
+            last_mouse_x = x;
+            last_mouse_y = y;
+        }
+        void end_drag() {
+            dragging = false;
+        }
+        void mouse_move(int x, int y) {
+            if (dragging) {
+                int deltax = x - last_mouse_x;
+                int deltay = y - last_mouse_y;
+                pan(float(deltax), float(deltay)); // adjust the camera position based on mouse movement
+                last_mouse_x = x;
+                last_mouse_y = y;
+            }
+        }
 
         /// \brief Constructs a default camera with uninitialized position/target.
         gl_camera() = default;

@@ -4,15 +4,57 @@
 #include "window.h"
 #include "dynamic_menu.h"
 #include "gl_context.h"
+#include "camera.h"
+#include "shaders.h"
+#include "light.h"
 
 #include "mesh_explicit.h"
 #include "mesh_renderer.h"
+
+#include "common_dialogs.h"
+
+#include "model.h"
+#include "prim.h"
+#include "arcball.h"
 
 // we are using the btm namespace for convenience, 
 // but you can also use the full namespace when calling functions and classes.
 // using namespace btm;
 
-void create_application_menu(btm::FrameWindow* pFrame, btm::Menu& menu)
+static std::unique_ptr<btm::gl_camera> g_cam;     ///< gl_camera used to view the scene and compute view/projection.
+static std::unique_ptr<btm::gl_shader> g_shader;  ///< Shader program used for mesh and helper rendering.
+static std::unique_ptr<btm::gl_light> g_light;    ///< Primary scene light affecting shading.
+static bool g_initialized = false;                    ///< Flag to track if application resources have been initialized.
+
+static std::unique_ptr<cModel> m_model; ///< The currently loaded 3D model, managed as a unique pointer for automatic cleanup.
+static std::vector<std::unique_ptr<gl_prim>> m_draw_parts;
+static std::unique_ptr<arcball> m_arcball;                                 ///< Arcball for mouse interaction
+
+static void create_model_view() {
+    m_draw_parts.clear();
+
+    if (m_model) {
+        const auto& parts = m_model->m_parts;
+        m_draw_parts.reserve(parts.size());
+
+        for (btm::mesh<double>* part : parts) {
+            part->computeFaceProperties();
+            mesh_data md;
+            collect_mesh_data(part, md);
+            auto prim = std::make_unique<gl_prim>();
+            prim->create_from_mesh(&md, GL_FILL);
+            m_draw_parts.push_back(std::move(prim));
+        }
+    }
+}
+
+static bool load_model(const std::string& fnm) {
+    m_model.reset(load_mesh_model(fnm));
+    create_model_view();
+    return m_model != nullptr;
+}
+
+static void create_application_menu(btm::FrameWindow* pFrame, btm::Menu& menu)
 {
     // Create top-level menus
     HMENU fileMenu = menu.create_submenu("File");
@@ -21,6 +63,14 @@ void create_application_menu(btm::FrameWindow* pFrame, btm::Menu& menu)
     // menu.add_item(fileMenu, "Open...", [] {
     //     // open file dialog
     //     });
+
+    int openId = menu.add_item(fileMenu, "Open...", [pFrame]() {
+        // open file dialog
+        const char* fnm = OpenFileDialog("All Files\0*.*\0\0");
+        if (fnm) {
+            load_model(fnm);
+        }
+        });
 
     int exitId = menu.add_item(fileMenu, "Exit", [pFrame]() {
         // quit, we can also post a message to the main window to trigger the close event
@@ -31,38 +81,111 @@ void create_application_menu(btm::FrameWindow* pFrame, btm::Menu& menu)
     menu.attach_to_window(pFrame->hWnd);
 }
 
-// This function creates a simple mesh with 4 vertices and 2 triangles for demonstration purposes.
-void create_mesh(btm::MeshExplicit<float>& m) {
-    // first create vertices
-    std::uint32_t i1 = m.add_vertex({ -1.f, -0.5f, 0.f });
-    std::uint32_t i2 = m.add_vertex({ -.33f, 0.5f, 0.f });
-    std::uint32_t i3 = m.add_vertex({ .33f, -.5f, 0.f });
-    std::uint32_t i4 = m.add_vertex({ 1.f, 0.5f, 0.f });
-    // then create triangles using the vertex indices
-    m.add_triangle(i1, i3, i2);
-    m.add_triangle(i3, i4, i2);
-    // finally build adjacency information for the mesh, 
-    // which is used for various mesh processing algorithms and rendering techniques.
-    m.build_adjacency();
+static void set_callbacks(btm::application& app) {
+    // Here we can set up various callbacks for user input and commands, 
+    // such as mouse movements, button clicks, keyboard input, and menu commands.
+    app.set_mouse_move_callback([](int x, int y, unsigned __int64 extra) {
+        if (m_arcball) m_arcball->drag(float(x), float(y));
+        if (g_cam) g_cam->mouse_move(x, y);
+        });
+    app.set_lmouse_down_callback([](int x, int y, unsigned __int64 extra) {
+        if (m_arcball) m_arcball->beginDrag(float(x), float(y));
+        });
+    app.set_lmouse_up_callback([](int x, int y, unsigned __int64 extra) {
+        if (m_arcball) m_arcball->endDrag();
+        });
+
+    app.set_rmouse_down_callback([](int x, int y, unsigned __int64 extra) {
+        if (g_cam) g_cam->begin_drag(x, y);
+        });
+    app.set_rmouse_up_callback([](int x, int y, unsigned __int64 extra) {
+        if (g_cam) g_cam->end_drag();
+        });
+
+    app.set_mouse_wheel_callback([](int delta, int ignore, unsigned __int64 extra) {
+        if (g_cam) g_cam->zoom(float(delta));
+        });
 }
 
-void render(const btm::MeshRenderer<float>& renderer)
+static void render()
 {
     btm::GLContext* context = btm::get_current_gl_context();
     if (!context)
         return;
+
+    btm::begin_render();
 
     int width = context->width();
     int height = context->height();
     if (height <= 0)
         height = 1;
 
+    if (!g_initialized) {
+        m_arcball.reset(new arcball(width, height));
+        // Initialize application resources (camera, shader, light) on the first render call
+        g_cam.reset(new btm::gl_camera(btm::fvec3(0, 0, 50), btm::fvec3(0, 0, 0), btm::fvec3(0, 1, 0)));
+        g_cam->set_fov(btm::dtr(45.f));
+
+        g_shader.reset(new gl_shader);
+        g_shader->add_file(GL_VERTEX_SHADER, "resources/shaders/mesh_tools_VertexShader.glsl");
+        g_shader->add_file(GL_FRAGMENT_SHADER, "resources/shaders/mesh_tools_FragmentShader.glsl");
+        g_shader->load();
+
+        g_light.reset(new gl_light(gl_light::SPOTLIGHT));
+        g_light->set_position(fvec3(-20, 20, 20));
+        g_light->set_ambient(fvec3(0.75f));
+        g_light->set_diffuse(fvec3(0.5f));
+        g_light->set_specular(fvec3(0.1f));
+
+        // OpenGL initialization
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        glEnable(GL_MULTISAMPLE);
+
+        g_initialized = true;
+    }
+    g_cam->set_aspect(width, height);
+    g_cam->set_viewport();
+
     glClearColor(0.2f, 0.4f, 0.6f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glViewport(0, 0, width, height);
+    fmat4 cam_matrix = g_cam->perspective();
+    fmat4 rot_mat(m_arcball->rotation());
+    // now it is safe to call resize on the arcball to update its internal viewport size, which is used for mouse coordinate normalization
+    m_arcball->resize((float)width, (float)height);
 
-    renderer.render();
+    g_shader->use();
+    g_light->apply(g_shader.get());
+    // set the combined view matrix
+    g_shader->set_mat4("camera", cam_matrix);
+
+    // render the mesh parts with the current rotation applied
+    if (m_draw_parts.size() > 0)
+    {
+        // render filled polygons first
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glEnable(GL_DEPTH_TEST);
+        for (const auto& part : m_draw_parts) {
+            part->set_draw_mode(GL_FILL);
+            part->force_black = false;
+            part->view_matrix = rot_mat;   // apply the current arcball rotation to the mesh parts
+            part->set_use_vertex_color(0); // ensure vertex color is disabled by default
+            part->render(g_shader.get());
+        }
+
+        // then render wireframe on top
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glEnable(GL_POLYGON_OFFSET_LINE);
+        glPolygonOffset(-1.0f, -1.0f); // pull lines toward camera
+        for (const auto& part : m_draw_parts) {
+            part->set_draw_mode(GL_LINE);
+            part->force_black = true; // render wireframe in black
+            part->set_use_vertex_color(0); // ensure vertex color is disabled for wireframe
+            part->render(g_shader.get());
+        }
+    }
 
     btm::end_render();
 }
@@ -76,13 +199,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int nCmdShow)
     btm::FrameWindow* pFrame = btm::create_main_window(false, 800, 450, "Simple Mesh Viewer");
     btm::Menu menu;
     create_application_menu(pFrame, menu);
+    set_callbacks(the_app);
     
-    // here we can create/load our mesh
-    btm::MeshExplicit<float> mesh;
-    create_mesh(mesh);
-    // and then create a renderer for the mesh, which will be used in the render loop to draw the mesh on the screen.
-    btm::MeshRenderer<float> renderer(mesh);
-
     btm::start_timer();
     btm::get_elapsed_time();
 
@@ -93,7 +211,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int nCmdShow)
 
         // and we conclude with the screen update by calling the render function, 
         // which will use the MeshRenderer to draw the mesh on the screen.
-        render(renderer);
+        render();
 
         {
             static int m_nFrames = 0;
