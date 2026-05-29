@@ -30,6 +30,19 @@ static std::unique_ptr<cModel> m_model; ///< The currently loaded 3D model, mana
 static std::vector<std::unique_ptr<gl_prim>> m_draw_parts;
 static std::unique_ptr<arcball> m_arcball;                                 ///< Arcball for mouse interaction
 
+
+static void reset_view() {
+    if (g_cam) {
+        g_cam->set_position(btm::fvec3(0, 0, 50));
+        g_cam->set_target(btm::fvec3(0, 0, 0));
+        g_cam->set_up(btm::fvec3(0, 1, 0));
+        g_cam->set_fov(btm::dtr(45.f));
+    }
+    if (m_arcball) {
+        m_arcball->reset();
+    }
+}
+
 static void create_model_view() {
     m_draw_parts.clear();
 
@@ -51,6 +64,7 @@ static void create_model_view() {
 static bool load_model(const std::string& fnm) {
     m_model.reset(load_mesh_model(fnm));
     create_model_view();
+    reset_view();
     return m_model != nullptr;
 }
 
@@ -84,6 +98,8 @@ static void create_application_menu(btm::FrameWindow* pFrame, btm::Menu& menu)
 static void set_callbacks(btm::application& app) {
     // Here we can set up various callbacks for user input and commands, 
     // such as mouse movements, button clicks, keyboard input, and menu commands.
+
+    // zoom and pan callbacks for the camera, and arcball dragging for rotation
     app.set_mouse_move_callback([](int x, int y, unsigned __int64 extra) {
         if (m_arcball) m_arcball->drag(float(x), float(y));
         if (g_cam) g_cam->mouse_move(x, y);

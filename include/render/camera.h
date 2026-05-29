@@ -107,6 +107,17 @@ namespace btm {
             up = _up;
         }
 
+        void set_position(const btm::fvec3& _location) {
+            location = _location;
+        }
+        void set_target(const btm::fvec3& _target) {
+            target = _target;
+        }
+        void set_up(const btm::fvec3& _up) {
+            up = _up;
+        }
+
+
         /// \brief Sets the vertical field of view.
         ///
         /// \param fov_in_radians Field of view in radians.
@@ -222,6 +233,11 @@ namespace btm {
 
         /// \brief Returns the current look-at target in world space.
         const btm::fvec3& get_target() const { return target; }
+
+        const btm::fvec3& get_up() const { return up; }
+
+        const int viewport_width() const { return width; }
+        const int viewport_height() const { return height; }
     };
 }
 
