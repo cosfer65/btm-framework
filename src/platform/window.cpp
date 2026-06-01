@@ -16,51 +16,42 @@ namespace btm
         switch (message)
         {
         case WM_MOUSEMOVE:
-            GetApp()->onMouseMove(x, y, extra);
             onMouseMove(x, y, extra);
             break;
         case WM_LBUTTONDOWN:
-            GetApp()->onLMouseDown(x, y, extra);
             onLMouseDown(x, y, extra);
             break;
         case WM_LBUTTONUP:
-            GetApp()->onLMouseUp(x, y, extra);
             onLMouseUp(x, y, extra);
             break;
         case WM_LBUTTONDBLCLK:
-            GetApp()->onLDblClick(x, y, extra);
             onLDblClick(x, y, extra);
             break;
         case WM_RBUTTONDOWN:
-            GetApp()->onRMouseDown(x, y, extra);
             onRMouseDown(x, y, extra);
             break;
         case WM_RBUTTONUP:
-            GetApp()->onRMouseUp(x, y, extra);
             onRMouseUp(x, y, extra);
             break;
         case WM_RBUTTONDBLCLK:
-            GetApp()->onRDblClick(x, y, extra);
             onRDblClick(x, y, extra);
             break;
         case WM_MBUTTONDOWN:
-            GetApp()->onMMouseDown(x, y, extra);
             onMMouseDown(x, y, extra);
             break;
         case WM_MBUTTONUP:
-            GetApp()->onMMouseUp(x, y, extra);
             onMMouseUp(x, y, extra);
             break;
         case WM_MBUTTONDBLCLK:
-            GetApp()->onMDblClick(x, y, extra);
             onMDblClick(x, y, extra);
             break;
-
         case WM_MOUSEWHEEL:
-            GetApp()->onMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam), extra);
-            onMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam), extra);
+            x = GET_WHEEL_DELTA_WPARAM(wParam);
+            y = 0;
+            onMouseWheel(x, extra);
             break;
         }
+        callback_registry::invoke_mouse_callback(message, x, y, extra);
     }
 
     LRESULT cWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
@@ -80,7 +71,7 @@ namespace btm
                 return 0;
 
             case SIZE_MAXIMIZED: // maximized?
-                OnMinimized(LOWORD(lParam), HIWORD(lParam));
+                OnMaximize(LOWORD(lParam), HIWORD(lParam));
                 return 0;
 
             case SIZE_RESTORED: // restored?
@@ -95,6 +86,7 @@ namespace btm
         case WM_KEYDOWN:
             if ((wParam >= 0) && (wParam <= 255))
             { // Is Key (wParam) In A Valid Range?
+                if (callback_registry::invoke_kbd_callback(WM_KEYDOWN, (int)wParam)) return 0; // handled by callback
                 GetApp()->onKeyDown((int)wParam); // Set The Selected Key (wParam) To True
                 onKeyDown((int)wParam);
                 return 0;
@@ -103,7 +95,8 @@ namespace btm
 
         case WM_KEYUP:
             if ((wParam >= 0) && (wParam <= 255))
-            {                         // Is Key (wParam) In A Valid Range?
+            { // Is Key (wParam) In A Valid Range?
+                if (callback_registry::invoke_kbd_callback(WM_KEYUP, (int)wParam)) return 0; // handled by callback
                 GetApp()->onKeyUp((int)wParam); // Set The Selected Key (wParam) To False
                 onKeyUp((int)wParam);
                 return 0;             // Return
@@ -117,6 +110,7 @@ namespace btm
             return OnPaint();
             break;
         case WM_COMMAND:
+            if (callback_registry::invoke_cmd_callback(LOWORD(wParam), 0)) return 0; // handled by callback
             return GetApp()->onCommand(LOWORD(wParam));
             break;
         case WM_DESTROY:
@@ -245,7 +239,7 @@ namespace btm
     {
         if (config.create_view) {
             // Create the view object
-            pView = get_view();
+            pView = create_view();
 
             HWND hView = CreateWindowEx(
                 0, "ViewWindowClass", nullptr, WS_CHILD | WS_VISIBLE,

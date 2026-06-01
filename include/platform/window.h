@@ -2,10 +2,11 @@
 
 #include <windows.h>
 #include <string>
+#include "cmd_target.h"
 
 namespace btm
 {
-    class cWindow
+    class cWindow :public command_target
     {
         void handle_mouse_message(UINT message, WPARAM wParam, LPARAM lParam);
         int wwidth = 0, wheight = 0;
@@ -59,19 +60,18 @@ namespace btm
             hWnd = nullptr;
             return 0;
         }
-        virtual LRESULT OnMinimize(int wid, int hei) { 
+        virtual LRESULT OnMinimize(int wid, int hei) {
             OnSize(wid, hei);
-            return 0; 
+            return 0;
         }
-        virtual LRESULT OnMinimized(int wid, int hei) { 
+        virtual LRESULT OnMaximize(int wid, int hei) {
             OnSize(wid, hei);
-            return 0; 
+            return 0;
         }
         virtual LRESULT OnRestored(int wid, int hei) {
             OnSize(wid, hei);
             return 0;
         }
-        virtual int onCommand(int cmd) { return 0; }
 
         virtual void render() {}
 
@@ -86,6 +86,7 @@ namespace btm
         virtual void onMMouseUp(int x, int y, unsigned __int64 extra) {}
         virtual void onMDblClick(int x, int y, unsigned __int64 extra) {}
         virtual void onMouseWheel(int delta, unsigned __int64 extra) {}
+
         virtual void onKeyDown(int key) {}
         virtual void onKeyUp(int key) {}
     };
@@ -93,7 +94,7 @@ namespace btm
     class GLContext;
     class glView : public cWindow
     {
-        GLContext *pGLContext = nullptr;
+        GLContext* pGLContext = nullptr;
 
     public:
         void begin_render();
@@ -101,7 +102,7 @@ namespace btm
 
         glView();
         virtual ~glView() {}
-        GLContext* get_gl_context(){
+        GLContext* get_gl_context() {
             return pGLContext;
         }
 
@@ -124,14 +125,17 @@ namespace btm
             std::string title = "TheMeshProject";
         } config;
         HINSTANCE hInst = nullptr;
-        glView *pView = nullptr;
+        glView* pView = nullptr;
 
         FrameWindow(HINSTANCE hInstance);
 
         virtual LRESULT OnCreate();
-        virtual glView *get_view() {
+        virtual glView* create_view() {
+            return new glView();
+        }
+        virtual glView* get_view() {
             if (pView == nullptr) {
-                pView = new glView();
+                pView = create_view();
             }
             return pView;
         }

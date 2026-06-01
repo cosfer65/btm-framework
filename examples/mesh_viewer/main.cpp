@@ -17,7 +17,7 @@
 #include "prim.h"
 #include "arcball.h"
 
-// we are using the btm namespace for convenience, 
+// we are using the btm namespace for convenience,
 // but you can also use the full namespace when calling functions and classes.
 // using namespace btm;
 
@@ -29,7 +29,6 @@ static bool g_initialized = false;                    ///< Flag to track if appl
 static std::unique_ptr<cModel> m_model; ///< The currently loaded 3D model, managed as a unique pointer for automatic cleanup.
 static std::vector<std::unique_ptr<gl_prim>> m_draw_parts;
 static std::unique_ptr<arcball> m_arcball;                                 ///< Arcball for mouse interaction
-
 
 static void reset_view() {
     if (g_cam) {
@@ -78,13 +77,31 @@ static void create_application_menu(btm::FrameWindow* pFrame, btm::Menu& menu)
     //     // open file dialog
     //     });
 
-    int openId = menu.add_item(fileMenu, "Open...", [pFrame]() {
-        // open file dialog
-        const char* fnm = OpenFileDialog("All Files\0*.*\0\0");
-        if (fnm) {
-            load_model(fnm);
-        }
-        });
+    bool use_menu_callbacks = true; // set to true to use lambda callbacks directly in add_item
+    // or false to use REGISTER_CMD_CALLBACK
+
+    if (use_menu_callbacks) {
+        // direct callback in add_item, which is simpler for small apps but less flexible for larger ones where you might want to separate command handling logic
+        int openId = menu.add_item(fileMenu, "Open...", [pFrame]() {
+            // open file dialog
+            const char* fnm = OpenFileDialog("All Files\0*.*\0\0");
+            if (fnm) {
+                load_model(fnm);
+            }
+            });
+    }
+    else {
+        // using REGISTER_CMD_CALLBACK allows for more centralized command handling and better separation of concerns, but requires defining the callback separately
+        int openId = menu.add_item(fileMenu, "Open...", NULL);
+        REGISTER_CMD_CALLBACK(openId, [](int) {
+            // open file dialog
+            const char* fnm = OpenFileDialog("All Files\0*.*\0\0");
+            if (fnm) {
+                load_model(fnm);
+            }
+            return 1;
+            });
+    }
 
     int exitId = menu.add_item(fileMenu, "Exit", [pFrame]() {
         // quit, we can also post a message to the main window to trigger the close event
@@ -93,32 +110,38 @@ static void create_application_menu(btm::FrameWindow* pFrame, btm::Menu& menu)
 
     // Attach to window
     menu.attach_to_window(pFrame->hWnd);
+
+    REGISTER_KBD_CALLBACK(WM_KEYDOWN, [](int msg_id, int keycode) {
+        // reset view on escape key
+        if (keycode == VK_ESCAPE) {
+            reset_view();
+        }
+        return 1; // indicate that we handled the key event
+        });
 }
 
 static void set_callbacks(btm::application& app) {
-    // Here we can set up various callbacks for user input and commands, 
+    // Here we can set up various callbacks for user input and commands,
     // such as mouse movements, button clicks, keyboard input, and menu commands.
 
     // zoom and pan callbacks for the camera, and arcball dragging for rotation
-    app.set_mouse_move_callback([](int x, int y, unsigned __int64 extra) {
+    REGISTER_MOUSE_CALLBACK(WM_MOUSEMOVE, [](int x, int y, unsigned __int64 extra) {
         if (m_arcball) m_arcball->drag(float(x), float(y));
         if (g_cam) g_cam->mouse_move(x, y);
         });
-    app.set_lmouse_down_callback([](int x, int y, unsigned __int64 extra) {
+    REGISTER_MOUSE_CALLBACK(WM_LBUTTONDOWN, [](int x, int y, unsigned __int64 extra) {
         if (m_arcball) m_arcball->beginDrag(float(x), float(y));
         });
-    app.set_lmouse_up_callback([](int x, int y, unsigned __int64 extra) {
+    REGISTER_MOUSE_CALLBACK(WM_LBUTTONUP, [](int x, int y, unsigned __int64 extra) {
         if (m_arcball) m_arcball->endDrag();
         });
-
-    app.set_rmouse_down_callback([](int x, int y, unsigned __int64 extra) {
+    REGISTER_MOUSE_CALLBACK(WM_RBUTTONDOWN, [](int x, int y, unsigned __int64 extra) {
         if (g_cam) g_cam->begin_drag(x, y);
         });
-    app.set_rmouse_up_callback([](int x, int y, unsigned __int64 extra) {
+    REGISTER_MOUSE_CALLBACK(WM_RBUTTONUP, [](int x, int y, unsigned __int64 extra) {
         if (g_cam) g_cam->end_drag();
         });
-
-    app.set_mouse_wheel_callback([](int delta, int ignore, unsigned __int64 extra) {
+    REGISTER_MOUSE_CALLBACK(WM_MOUSEWHEEL, [](int delta, int ignore, unsigned __int64 extra) {
         if (g_cam) g_cam->zoom(float(delta));
         });
 }
@@ -216,7 +239,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int nCmdShow)
     btm::Menu menu;
     create_application_menu(pFrame, menu);
     set_callbacks(the_app);
-    
+
     btm::start_timer();
     btm::get_elapsed_time();
 
@@ -225,7 +248,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int nCmdShow)
         float fElapsed = (float)btm::get_elapsed_time();
         // Here we can update our application state based on the elapsed time, user input, or other factors.
 
-        // and we conclude with the screen update by calling the render function, 
+        // and we conclude with the screen update by calling the render function,
         // which will use the MeshRenderer to draw the mesh on the screen.
         render();
 

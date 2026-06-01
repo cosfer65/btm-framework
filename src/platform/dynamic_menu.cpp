@@ -1,4 +1,5 @@
 #include "dynamic_menu.h"
+#include "cmd_target.h"
 
 namespace btm
 {
@@ -102,7 +103,13 @@ namespace btm
 
             if (it != s_Instance->m_Callbacks.end())
             {
-                it->second();
+                if (it->second) {
+                    it->second();
+                    return 0;
+                }
+            }
+            // also check the global callback registry for command callbacks, which allows for more centralized command handling
+            if (callback_registry::invoke_cmd_callback(id, 0)) {
                 return 0;
             }
         }

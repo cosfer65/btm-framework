@@ -10,6 +10,8 @@
 
 namespace btm
 {
+    command_map_t command_target::command_map;
+    callback_map_t callback_registry::callback_map;
 
     static application *theApp = nullptr;
     static HINSTANCE ghInstance;
@@ -44,12 +46,20 @@ namespace btm
             pFrame = nullptr;
         }
     }
-
+    FrameWindow* application::createMainWindow(HINSTANCE hInstance) {
+        return new FrameWindow(hInstance);
+    }
+    void application::setMainWindow(FrameWindow* frame) {
+        if (pFrame != nullptr) {
+            delete pFrame;
+        }
+        pFrame = frame;
+    }
     FrameWindow *application::getMainWindow(HINSTANCE hInstance)
     {
         if (pFrame == nullptr)
         {
-            pFrame = new FrameWindow(hInstance);
+            pFrame = createMainWindow(hInstance);
         }
         return pFrame;
     }
@@ -163,12 +173,13 @@ namespace btm
         RegisterFrameWindowClass(GetModuleHandle(nullptr), "BTM_WindowClass", CS_HREDRAW | CS_VREDRAW, cWindow::StaticWndProc);
         RegisterViewWindowClass(GetModuleHandle(nullptr), "ViewWindowClass", CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS, cWindow::StaticWndProc);
 
-        FrameWindow *pFrame = theApp->getMainWindow(GetModuleHandle(nullptr));
+        FrameWindow *pFrame = theApp->createMainWindow(GetModuleHandle(nullptr));
         if (!pFrame)
         {
             MessageBox(nullptr, "Failed to create main window", "Error", MB_ICONERROR);
             return nullptr;
         }
+        theApp->setMainWindow(pFrame);
         pFrame->config.create_view = has_view;
         pFrame->config.width = width;
         pFrame->config.height = height;
