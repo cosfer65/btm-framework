@@ -128,21 +128,27 @@ static void set_callbacks(btm::application& app) {
     REGISTER_MOUSE_CALLBACK(WM_MOUSEMOVE, [](int x, int y, unsigned __int64 extra) {
         if (m_arcball) m_arcball->drag(float(x), float(y));
         if (g_cam) g_cam->mouse_move(x, y);
+        return 1; // indicate that we handled the mouse move event
         });
     REGISTER_MOUSE_CALLBACK(WM_LBUTTONDOWN, [](int x, int y, unsigned __int64 extra) {
         if (m_arcball) m_arcball->beginDrag(float(x), float(y));
+        return 1; // indicate that we handled the left button down event
         });
     REGISTER_MOUSE_CALLBACK(WM_LBUTTONUP, [](int x, int y, unsigned __int64 extra) {
         if (m_arcball) m_arcball->endDrag();
+        return 1; // indicate that we handled the left button up event
         });
     REGISTER_MOUSE_CALLBACK(WM_RBUTTONDOWN, [](int x, int y, unsigned __int64 extra) {
         if (g_cam) g_cam->begin_drag(x, y);
+        return 1; // indicate that we handled the right button down event
         });
     REGISTER_MOUSE_CALLBACK(WM_RBUTTONUP, [](int x, int y, unsigned __int64 extra) {
         if (g_cam) g_cam->end_drag();
+        return 1; // indicate that we handled the right button up event
         });
     REGISTER_MOUSE_CALLBACK(WM_MOUSEWHEEL, [](int delta, int ignore, unsigned __int64 extra) {
         if (g_cam) g_cam->zoom(float(delta));
+        return 1; // indicate that we handled the mouse wheel event
         });
 }
 

@@ -3,7 +3,7 @@
 
 #include <map>
 
-typedef void (*mouse_callback)(int x, int y, unsigned __int64 extra);
+typedef int (*mouse_callback)(int x, int y, unsigned __int64 extra);
 typedef int (*kbd_callback)(int msg_id, int keycode);
 typedef int (*cmd_callback)(int cmd);
 typedef std::pair<int, int> callback_id_t; // (message_id, command_id)
