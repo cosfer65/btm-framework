@@ -33,9 +33,8 @@ void render() {
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int nCmdShow) {
     // the application instance
     // we are creating a global instance of our application class, which will be
-    // used throughout the program this is a GL application, so we create an
-    // instance of glApplication, which inherits from winApplication and
-    // overrides necessary methods for OpenGL rendering
+    // used throughout the program this is a GL application, 
+    // and we will use it to manage our OpenGL resources and state
     application the_app;
 
     // initialize the framework
@@ -43,8 +42,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int nCmdShow) {
 
     // create the main application window and show it
     // we use the create_main_window function to create a FrameWindow instance,
-    // which will be our main application window we pass the instance handle,
-    // and window title to the function
+    // which will be our main application window
+    // ignore the first parameter (has_view) for now, 
+    // and set the window size to 800x600 with a title of "Simple Rendering Window"
     FrameWindow *pFrame = create_main_window(false, 800, 600, "Simple Rendering Window");
 
     // run the application main loop
