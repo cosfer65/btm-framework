@@ -208,7 +208,7 @@ tangent basis of the face plane.
              [10-11]: diff(pos1-pos0) in 2D
 
 Mathematical Background
-    The output feeds into leastSquares(), which solves the linear system:
+    The output feeds into least_squares(), which solves the linear system:
         E * [ee, ff, gg]^T = N
     where:
     - N (result[0-5]):  How normals change across edges (measures surface
@@ -272,7 +272,7 @@ void convert3dTo2dCoords(const basematrix<T, 2, 3> &uv_map,
     // Layout:
     // [0-5]: Normal difference (6 floats: 3 edges x 2 components)
     // [6-11]: Edge coordinate differences (6 floats: 3 edges x 2 components)
-    // The output feeds into leastSquares(), which solves
+    // The output feeds into least_squares(), which solves
     // E * [ee, ff, gg] ^ T = N
     // N(result[0 - 5]) : How normals change
     // E(result[6 - 11]) : How positions change

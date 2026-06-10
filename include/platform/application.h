@@ -28,9 +28,9 @@ namespace btm
         const std::string& get_app_name() const { return m_app_name; }
 
         virtual void precreate_window(HINSTANCE hInstance, WNDCLASSEX *m_wcex) {}
-        virtual FrameWindow* createMainWindow(HINSTANCE hInstance);
-        void setMainWindow(FrameWindow* frame);
-        virtual FrameWindow *getMainWindow(HINSTANCE hInstance);
+        virtual FrameWindow* create_main_window(HINSTANCE hInstance);
+        void set_main_window(FrameWindow* frame);
+        virtual FrameWindow *get_main_window(HINSTANCE hInstance);
         virtual cWindow *get_active_view();
         virtual GLContext *get_gl_context();
         virtual void init_application() {}
@@ -42,8 +42,8 @@ namespace btm
         virtual void restart_simulation() {}
         virtual void render();
 
-        virtual void onKeyDown(int keycode) { if (key_down_callback) key_down_callback(WM_KEYDOWN, keycode); }
-        virtual void onKeyUp(int keycode) { if (key_up_callback) key_up_callback(WM_KEYUP, keycode); }
+        virtual void on_key_down(int keycode) { if (key_down_callback) key_down_callback(WM_KEYDOWN, keycode); }
+        virtual void on_key_up(int keycode) { if (key_up_callback) key_up_callback(WM_KEYUP, keycode); }
 
         void set_key_down_callback(kbd_callback cb) { key_down_callback = cb; }
         void set_key_up_callback(kbd_callback cb) { key_up_callback = cb; }

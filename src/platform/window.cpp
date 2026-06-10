@@ -87,8 +87,8 @@ namespace btm
             if ((wParam >= 0) && (wParam <= 255))
             { // Is Key (wParam) In A Valid Range?
                 if (callback_registry::invoke_kbd_callback(WM_KEYDOWN, (int)wParam)) return 0; // handled by callback
-                GetApp()->onKeyDown((int)wParam); // Set The Selected Key (wParam) To True
-                onKeyDown((int)wParam);
+                GetApp()->on_key_down((int)wParam); // Set The Selected Key (wParam) To True
+                on_key_down((int)wParam);
                 return 0;
             }
             break;
@@ -97,8 +97,8 @@ namespace btm
             if ((wParam >= 0) && (wParam <= 255))
             { // Is Key (wParam) In A Valid Range?
                 if (callback_registry::invoke_kbd_callback(WM_KEYUP, (int)wParam)) return 0; // handled by callback
-                GetApp()->onKeyUp((int)wParam); // Set The Selected Key (wParam) To False
-                onKeyUp((int)wParam);
+                GetApp()->on_key_up((int)wParam); // Set The Selected Key (wParam) To False
+                on_key_up((int)wParam);
                 return 0;             // Return
             }
             break;

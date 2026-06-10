@@ -54,7 +54,7 @@ namespace btm {
 		fmat4 rmat;  ///< Local rotation matrix.
 		fmat4 tmat;  ///< Translation matrix.
 		fmat4 smat;  ///< Scaling matrix.
-		bool force_black;        ///< If true, forces the primitive to render in black (e.g., for wireframe).
+		bool force_black=false;        ///< If true, forces the primitive to render in black (e.g., for wireframe).
         fmat4 view_matrix; ///< View matrix for the primitive (optional, can be set externally).
 
 		/**
@@ -146,19 +146,13 @@ namespace btm {
 		virtual void render(gl_shader* _shader) {
 			if (!vao) return;
 
-            _shader->set_int("object_or_vertex_color", 0);  // object color by default
-			if (force_black)
-				_shader->set_vec4("object_color", fvec4(0, 0, 0, 1)); // black for wireframe
-            else
-				_shader->set_vec4("object_color", fvec4(m_color, 1));
-			if (use_vertex_color) {
-                _shader->set_int("object_or_vertex_color", 1); // use per-vertex color
+            if (force_black) {
+                _shader->set_vec3("object_color", fvec3(0, 0, 0));
+            }
+			else {
+				_shader->set_vec3("object_color", m_color);
 			}
-			else if (m_material) {
-				m_material->apply(_shader);
-				_shader->set_vec4("object_color", fvec4(m_material->get_diffuse(), 1));
-			}
-
+	
 			// position object
 			fmat4 ob_matrix = tmat * rmat * smat;
 			ob_matrix = ob_matrix.transpose();    // convert to column wise for OpenGL!

@@ -21,10 +21,10 @@ namespace btm
             // It iterates over the triangles in the mesh and extracts vertex positions to fill the mesh_data structure.
             size_t index = 0;
             size_t cur_face = 0;
-            for (const auto& tri : mesh.triangles) {
-                const auto& v0 = mesh.vertices[tri.v0].position;
-                const auto& v1 = mesh.vertices[tri.v1].position;
-                const auto& v2 = mesh.vertices[tri.v2].position;
+            for (const auto& face : mesh.faces) {
+                const auto& v0 = mesh.vertices[face.v0].position;
+                const auto& v1 = mesh.vertices[face.v1].position;
+                const auto& v2 = mesh.vertices[face.v2].position;
                 const auto& norm = mesh.attributes.face_normals[cur_face]; // assuming one normal per face for flat shading
 
                 mdata.vertices.push_back(static_cast<float>(v0.x()));

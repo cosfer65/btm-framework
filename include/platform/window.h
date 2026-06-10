@@ -87,8 +87,8 @@ namespace btm
         virtual void onMDblClick(int x, int y, unsigned __int64 extra) {}
         virtual void onMouseWheel(int delta, unsigned __int64 extra) {}
 
-        virtual void onKeyDown(int key) {}
-        virtual void onKeyUp(int key) {}
+        virtual void on_key_down(int key) {}
+        virtual void on_key_up(int key) {}
     };
 
     class GLContext;

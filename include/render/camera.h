@@ -6,6 +6,7 @@
 
 #include "vector.h"
 #include "gl_math.h"
+#include "shaders.h"
 
 namespace btm {
 
@@ -169,22 +170,22 @@ namespace btm {
         /// \brief Builds the perspective projection matrix for the camera.
         ///
         /// Uses the current `fov`, `aspect`, `nearPlane` and `farPlane`.
-        btm::fmat4 view_perspective() {
+        btm::fmat4 projection_matrix() {
             return perspective_matrix(fov, aspect, nearPlane, farPlane);
         }
 
         /// \brief Builds the view matrix using a look-at transform.
         ///
         /// Uses the current `location`, `target` and `up`.
-        btm::fmat4 camera_perspective() {
+        btm::fmat4 view_matrix() {
             return lookAt(location, target, up);
         }
 
         /// \brief Returns the combined view-projection matrix.
         ///
-        /// Computed as `camera_perspective() * view_perspective()`.
+        /// Computed as `view_matrix() * projection_matrix()`.
         btm::fmat4 perspective() {
-            return camera_perspective() * view_perspective();
+            return view_matrix() * projection_matrix();
         }
 
         /// \brief Applies the currently configured viewport to OpenGL.
@@ -238,6 +239,15 @@ namespace btm {
 
         const int viewport_width() const { return width; }
         const int viewport_height() const { return height; }
+
+        void apply(gl_shader* shdr) {
+            fmat4 view = view_matrix();
+            fmat4 projection = projection_matrix();
+            fvec3 loc = get_location();
+            shdr->set_mat4("view", view);
+            shdr->set_mat4("projection", projection);
+            shdr->set_vec3("cameraPos", loc);
+        }
     };
 }
 

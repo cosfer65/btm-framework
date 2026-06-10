@@ -278,11 +278,11 @@ namespace btm {
 
             glBindVertexArray(vao);
             unsigned int point_count = (unsigned int)m_mesh_data.num_indices / 3;
-            _shader->set_vec4("object_color", fvec4(1, 0, 0, 1));
+            _shader->set_vec3("object_color", fvec3(1, 0, 0));
             glDrawElements(GL_LINES, point_count, GL_UNSIGNED_INT, 0);
-            _shader->set_vec4("object_color", fvec4(0, 1, 0, 1));
+            _shader->set_vec3("object_color", fvec3(0, 1, 0));
             glDrawElements(GL_LINES, point_count, GL_UNSIGNED_INT, (const void*)(point_count * sizeof(unsigned int)));
-            _shader->set_vec4("object_color", fvec4(0, 0, 1, 1));
+            _shader->set_vec3("object_color", fvec3(0, 0, 1));
             glDrawElements(GL_LINES, point_count, GL_UNSIGNED_INT, (const void*)(2 * point_count * sizeof(unsigned int)));
             glBindVertexArray(0);
         }

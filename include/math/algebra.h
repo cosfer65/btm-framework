@@ -177,7 +177,7 @@ namespace btm {
      */
 
     template <typename T>
-    void leastSquares(const T* second_fundamental, T* e_f_g)
+    void least_squares(const T* second_fundamental, T* e_f_g)
     {
         // N is the 6x1 RHS vector storing measured normal differences second_fundamental[0..5]
         basematrix<T, 6, 1> N({ second_fundamental[0],second_fundamental[1],second_fundamental[2],
@@ -209,11 +209,6 @@ namespace btm {
         e_f_g[1] = sol[1];
         e_f_g[2] = sol[2];
     }
-
-
-
-
-
 };
 #endif // __algebra_h__
 

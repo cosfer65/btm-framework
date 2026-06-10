@@ -46,20 +46,20 @@ namespace btm
             pFrame = nullptr;
         }
     }
-    FrameWindow* application::createMainWindow(HINSTANCE hInstance) {
+    FrameWindow* application::create_main_window(HINSTANCE hInstance) {
         return new FrameWindow(hInstance);
     }
-    void application::setMainWindow(FrameWindow* frame) {
+    void application::set_main_window(FrameWindow* frame) {
         if (pFrame != nullptr) {
             delete pFrame;
         }
         pFrame = frame;
     }
-    FrameWindow *application::getMainWindow(HINSTANCE hInstance)
+    FrameWindow *application::get_main_window(HINSTANCE hInstance)
     {
         if (pFrame == nullptr)
         {
-            pFrame = createMainWindow(hInstance);
+            pFrame = create_main_window(hInstance);
         }
         return pFrame;
     }
@@ -92,7 +92,7 @@ namespace btm
         // create the main application window and show it
         // we use the create_main_window function to create a FrameWindow instance, which will be our main application window
         // we pass the instance handle, and window title to the function
-        FrameWindow *pFrame = create_main_window(true, 600, 400, m_app_name.c_str());
+        FrameWindow *pFrame = btm::create_main_window(true, 600, 400, m_app_name.c_str());
 
         // run the application main loop
         // start the timer before we enter the main loop
@@ -173,13 +173,13 @@ namespace btm
         RegisterFrameWindowClass(GetModuleHandle(nullptr), "BTM_WindowClass", CS_HREDRAW | CS_VREDRAW, cWindow::StaticWndProc);
         RegisterViewWindowClass(GetModuleHandle(nullptr), "ViewWindowClass", CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS, cWindow::StaticWndProc);
 
-        FrameWindow *pFrame = theApp->createMainWindow(GetModuleHandle(nullptr));
+        FrameWindow *pFrame = theApp->create_main_window(GetModuleHandle(nullptr));
         if (!pFrame)
         {
             MessageBox(nullptr, "Failed to create main window", "Error", MB_ICONERROR);
             return nullptr;
         }
-        theApp->setMainWindow(pFrame);
+        theApp->set_main_window(pFrame);
         pFrame->config.create_view = has_view;
         pFrame->config.width = width;
         pFrame->config.height = height;

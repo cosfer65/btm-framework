@@ -46,27 +46,27 @@ namespace btm {
      */
     gl_mesh* create_UCS_mesh() {
         gl_mesh* ms = new gl_mesh;
-        ms->addVertex(fvec3(0, 0, 0));
+        ms->add_vertex(fvec3(0, 0, 0));
         // x->red
-        ms->addVertex(fvec3(1, 0, 0));
-        ms->addVertex(fvec3(0.8f, 0.2f, 0));
-        ms->addVertex(fvec3(0.8f, -0.2f, 0));
+        ms->add_vertex(fvec3(1, 0, 0));
+        ms->add_vertex(fvec3(0.8f, 0.2f, 0));
+        ms->add_vertex(fvec3(0.8f, -0.2f, 0));
         ms->addIndices(0, 1);
         ms->addIndices(1, 2);
         ms->addIndices(1, 3);
 
         // y->green
-        ms->addVertex(fvec3(0, 1, 0));
-        ms->addVertex(fvec3(0.2f, 0.8f, 0));
-        ms->addVertex(fvec3(-0.2f, 0.8f, 0));
+        ms->add_vertex(fvec3(0, 1, 0));
+        ms->add_vertex(fvec3(0.2f, 0.8f, 0));
+        ms->add_vertex(fvec3(-0.2f, 0.8f, 0));
         ms->addIndices(0, 4);
         ms->addIndices(4, 5);
         ms->addIndices(4, 6);
 
         // z->blue
-        ms->addVertex(fvec3(0, 0, 1));
-        ms->addVertex(fvec3(0, 0.2f, 0.8f));
-        ms->addVertex(fvec3(0, -0.2f, 0.8f));
+        ms->add_vertex(fvec3(0, 0, 1));
+        ms->add_vertex(fvec3(0, 0.2f, 0.8f));
+        ms->add_vertex(fvec3(0, -0.2f, 0.8f));
         ms->addIndices(0, 7);
         ms->addIndices(7, 8);
         ms->addIndices(7, 9);
