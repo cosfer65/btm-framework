@@ -1,12 +1,10 @@
 #ifndef __primitives__
 #define __primitives__
 
-#include "vector.h"
+#include "transformations.h"
 #include "gl_mesh.h"
 #include "material.h"
 #include "shaders.h"
-
-using namespace btm;
 
 namespace btm {
 	/**
@@ -69,9 +67,9 @@ namespace btm {
 			draw_type = GL_TRIANGLES;
 			draw_elements = true;
 			// matrices are row-major!
-			rmat = rotation_matrix<float>(rotation.x(), 0, 0, 1) * rotation_matrix<float>(rotation.y(), 0, 1, 0) * rotation_matrix<float>(rotation.z(), 1, 0, 0);
-			smat = scaling_matrix(scale.x(), scale.y(), scale.z());
-			tmat = translation_matrix(position.x(), position.y(), position.z());
+            rotate_to(rotation);
+			smat = Scale<float>(scale.x(), scale.y(), scale.z());
+			move_to(position);
 			use_vertex_color = 0;
 			m_texture = 0;
             m_material = nullptr;
@@ -154,12 +152,12 @@ namespace btm {
 			}
 	
 			// position object
-			fmat4 ob_matrix = tmat * rmat * smat;
-			ob_matrix = ob_matrix.transpose();    // convert to column wise for OpenGL!
-			ob_matrix = view_matrix * ob_matrix;
+			fmat4 model_matrix = tmat * rmat * smat;
+			model_matrix = model_matrix.transpose();    // convert to column wise for OpenGL!
+			model_matrix = view_matrix * model_matrix;
 
 			// pass transformation to shader
-			_shader->set_mat4("model", ob_matrix);
+			_shader->set_mat4("model", model_matrix);
 
 			glBindVertexArray(vao);
 			if (draw_elements)
@@ -201,9 +199,9 @@ namespace btm {
 			position = _p;
 			scale = _s;
 			rotation = _r;
-			tmat = translation_matrix(position.x(), position.y(), position.z());
-			smat = scaling_matrix(scale.x(), scale.y(), scale.z());
-			rmat = rotation_matrix<float>(rotation.x(), 1, 0, 0) * rotation_matrix<float>(rotation.y(), 0, 1, 0) * rotation_matrix<float>(rotation.z(), 0, 0, 1);
+			move_to(position);
+			smat = Scale<float>(scale.x(), scale.y(), scale.z());
+			rotate_to(rotation);
 		}
 
 		/**
@@ -212,7 +210,7 @@ namespace btm {
 		 */
 		void rotate_to(const fvec3& _r) {
 			rotation = _r;
-			rmat = rotation_matrix<float>(rotation.x(), 1, 0, 0) * rotation_matrix<float>(rotation.y(), 0, 1, 0) * rotation_matrix<float>(rotation.z(), 0, 0, 1);
+			rmat = Rotation<float>(rotation.x(), rotation.y(), rotation.z());
 		}
 
 		/**
@@ -223,7 +221,7 @@ namespace btm {
 		 */
 		void rotate_to(float x, float y, float z) {
 			rotation = fvec3(x, y, z);
-			rmat = rotation_matrix<float>(rotation.x(), 1, 0, 0) * rotation_matrix<float>(rotation.y(), 0, 1, 0) * rotation_matrix<float>(rotation.z(), 0, 0, 1);
+            rotate_to(rotation);
 		}
 
 		/**
@@ -232,7 +230,7 @@ namespace btm {
 		 */
 		void rotate_by(const fvec3& _r) {
 			rotation += _r;
-			rmat = rotation_matrix<float>(rotation.x(), 1, 0, 0) * rotation_matrix<float>(rotation.y(), 0, 1, 0) * rotation_matrix<float>(rotation.z(), 0, 0, 1);
+			rotate_to(rotation);
 		}
 
 		/**
@@ -243,7 +241,7 @@ namespace btm {
 		 */
 		void rotate_by(float x, float y, float z) {
 			rotation += fvec3(x, y, z);
-			rmat = rotation_matrix<float>(rotation.x(), 1, 0, 0) * rotation_matrix<float>(rotation.y(), 0, 1, 0) * rotation_matrix<float>(rotation.z(), 0, 0, 1);
+			rotate_to(rotation);
 		}
 
 		/**
@@ -252,7 +250,7 @@ namespace btm {
 		 */
 		void move_to(const fvec3& _r) {
 			position = _r;
-			tmat = translation_matrix(position.x(), position.y(), position.z());
+			tmat = Translation<float>(position.x(), position.y(), position.z());
 		}
 
 		/**
@@ -263,7 +261,7 @@ namespace btm {
 		 */
 		void move_to(float x, float y, float z) {
 			position = fvec3(x, y, z);
-			tmat = translation_matrix(x, y, z);
+            move_to(position);
 		}
 
 		/**
@@ -272,7 +270,7 @@ namespace btm {
 		 */
 		void move_by(const fvec3& _r) {
 			position += _r;
-			tmat = translation_matrix(position.x(), position.y(), position.z());
+			move_to(position);
 		}
 
 		/**
@@ -283,7 +281,7 @@ namespace btm {
 		 */
 		void move_by(float x, float y, float z) {
 			position += fvec3(x, y, z);
-			tmat = translation_matrix(position.x(), position.y(), position.z());
+			move_to(position);
 		}
 
 		/**
@@ -295,6 +293,15 @@ namespace btm {
 		}
 
 		/**
+		 * @brief Sets the scale vector.
+		 * @param _s Scale vector.
+		 */
+		void set_scale(const fvec3& _s) {
+			scale = _s;
+			smat = Scale<float>(scale.x(), scale.y(), scale.z());
+		}
+
+		/**
 		 * @brief Sets the scale factors.
 		 * @param x Scale along X axis.
 		 * @param y Scale along Y axis.
@@ -302,17 +309,9 @@ namespace btm {
 		 */
 		void set_scale(float x, float y, float z) {
 			scale = fvec3(x, y, z);
-			smat = scaling_matrix(x, y, z);
+            set_scale(scale);
 		}
 
-		/**
-		 * @brief Sets the scale vector.
-		 * @param _s Scale vector.
-		 */
-		void set_scale(const fvec3& _s) {
-			scale = _s;
-			smat = scaling_matrix(scale.x(), scale.y(), scale.z());
-		}
 
 		/**
 		 * @brief Sets the scale along the X axis.
@@ -320,7 +319,7 @@ namespace btm {
 		 */
 		void set_xscale(float _s) {
 			scale.x() = _s;
-			smat = scaling_matrix(scale.x(), scale.y(), scale.z());
+			set_scale(scale);
 		}
 
 		/**
@@ -329,7 +328,7 @@ namespace btm {
 		 */
 		void set_yscale(float _s) {
 			scale.y() = _s;
-			smat = scaling_matrix(scale.x(), scale.y(), scale.z());
+			set_scale(scale);
 		}
 
 		/**
@@ -338,7 +337,7 @@ namespace btm {
 		 */
 		void set_zscale(float _s) {
 			scale.z() = _s;
-			smat = scaling_matrix(scale.x(), scale.y(), scale.z());
+			set_scale(scale);
 		}
 
 		/**

@@ -391,6 +391,9 @@ namespace btm {
 
 #endif
 
+    template <typename T> using basemat3 = basematrix<T, 3, 3>;
+    template <typename T> using basemat4 = basematrix<T, 4, 4>;
+
     typedef basematrix<float, 2, 2> fmat2;
     typedef basematrix<float, 3, 3> fmat3;
     typedef basematrix<float, 4, 4> fmat4;
