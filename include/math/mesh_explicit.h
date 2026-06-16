@@ -80,11 +80,11 @@ namespace btm {
         std::vector<basevec3<T>> face_normals;
 
         // Curvature fields
-        // std::vector<T> k1; // principal curvature 1
-        // std::vector<T> k2; // principal curvature 2
+        std::vector<T> k1; // principal curvature 1
+        std::vector<T> k2; // principal curvature 2
 
         // Segmentation labels
-        // std::vector<int> segment_id;
+        std::vector<int> segment_id;
     };
 
     template <typename T>
