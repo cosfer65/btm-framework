@@ -4,6 +4,9 @@
 #ifndef __camera_h__
 #define __camera_h__
 
+#undef max
+
+#include <algorithm>
 #include "vector.h"
 #include "gl_math.h"
 #include "shaders.h"
@@ -248,6 +251,45 @@ namespace btm {
             shdr->set_mat4("projection", projection);
             shdr->set_vec3("cameraPos", loc);
         }
+
+        // Computes the optimal camera distance so that an object fits fully on screen
+        // fovDeg: vertical field of view in degrees
+        // objWidth, objHeight: size of the model's bounding box (in world units)
+        // aspect: screen aspect ratio = width / height
+        //
+        // Returns the required distance from camera to model center.
+        float computeCameraDistance(float fovDeg, float objWidth, float objHeight) {
+            if (fovDeg <= 0.0f || fovDeg >= 179.0f) {
+                throw std::invalid_argument("FOV must be between 0 and 179 degrees.");
+            }
+            if (objWidth <= 0.0f || objHeight <= 0.0f) {
+                throw std::invalid_argument("Object dimensions must be positive.");
+            }
+            if (aspect <= 0.0f) {
+                throw std::invalid_argument("Aspect ratio must be positive.");
+            }
+
+            // Convert FOV to radians
+            float fovRad = fovDeg * (3.14159265359f / 180.0f);
+
+            // Half sizes
+            float halfHeight = objHeight * 0.5f;
+            float halfWidth = objWidth * 0.5f;
+
+            // Required distance to fit height
+            float distHeight = halfHeight / std::tan(fovRad * 0.5f);
+
+            // Compute horizontal FOV from vertical FOV and aspect ratio:
+            // tan(hFOV/2) = tan(vFOV/2) * aspect
+            float hFovRad = 2.0f * std::atan(std::tan(fovRad * 0.5f) * aspect);
+
+            // Required distance to fit width
+            float distWidth = halfWidth / std::tan(hFovRad * 0.5f);
+
+            // Use whichever distance is larger (guarantees the model fits)
+            return std::max(distHeight, distWidth);
+        }
+
     };
 }
 

@@ -19,13 +19,29 @@ namespace btm {
 
     struct FaceExplicit {
         std::uint32_t v0, v1, v2;
-        bool flipped = false;
+        std::uint32_t v(int index) const {
+            switch (index) {
+                case 0: return v0;
+                case 1: return v1;
+                case 2: return v2;
+                default: throw std::out_of_range("FaceExplicit::v index out of range");
+            }
+        }
+
+        //bool flipped = false;
         bool visited = false;
+        void flip() {
+            std::swap(v1, v2);
+        }
     };
 
     struct VertexAdjacency {
         std::vector<std::uint32_t> incident_faces;
         std::vector<std::uint32_t> neighbor_vertices;
+    };
+
+    struct EdgeAdjacency {
+        std::vector<std::uint32_t> incident_faces;
     };
 
     struct FaceAdjacency {
@@ -64,11 +80,11 @@ namespace btm {
         std::vector<basevec3<T>> face_normals;
 
         // Curvature fields
-        std::vector<T> k1; // principal curvature 1
-        std::vector<T> k2; // principal curvature 2
+        // std::vector<T> k1; // principal curvature 1
+        // std::vector<T> k2; // principal curvature 2
 
         // Segmentation labels
-        std::vector<int> segment_id;
+        // std::vector<int> segment_id;
     };
 
     template <typename T>
@@ -86,6 +102,15 @@ namespace btm {
 
         basevec3<T> vertex_position(std::uint32_t index) const {
             return vertices[index].position;
+        }
+
+        EdgeExplicit* find_edge(const EdgeKey& key) {
+            auto it = edges.find(key);
+            if (it == edges.end()) {
+                // If the edge does not exist, create it
+                return nullptr;
+            }
+            return &(it->second);
         }
 
         void adjacent_faces(std::uint32_t face, std::vector<std::uint32_t>& out_faces) const {
@@ -150,8 +175,7 @@ namespace btm {
 
         void flip_all_faces() {
             for (auto& face : faces) {
-                std::swap(face.v1, face.v2); // flip the face by swapping two vertices
-                face.flipped = !face.flipped; // toggle the flipped flag
+                face.flip();
             }
         }
 
@@ -271,14 +295,14 @@ namespace btm {
                 return (a.x() * cr.x() + a.y() * cr.y() + a.z() * cr.z()) / 6.0;
                 };
 
-            if (!face.flipped) {
-                if (nv == 3) vol += tri(0, 1, 2);
-                else          vol += tri(0, 1, 2) + tri(0, 2, 3);
-            }
-            else {
-                if (nv == 3) vol -= tri(0, 1, 2);
-                else          vol -= tri(0, 1, 2) + tri(0, 2, 3);
-            }
+            // if (!face.flipped) {
+                 if (nv == 3) vol += tri(0, 1, 2);
+                 else          vol += tri(0, 1, 2) + tri(0, 2, 3);
+            // }
+            // else {
+            //     if (nv == 3) vol -= tri(0, 1, 2);
+            //     else          vol -= tri(0, 1, 2) + tri(0, 2, 3);
+            // }
         }
 
         return vol;

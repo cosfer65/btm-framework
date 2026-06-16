@@ -179,23 +179,22 @@ namespace btm {
     }
 
     template <typename T>
-    void collect_mesh_data(const MeshExplicit<T>& mesh, mesh_data& mdata) {
+    void collect_mesh_data(const MeshExplicit<T>* mesh, mesh_data& mdata) {
         // This function converts the MeshExplicit data into a flat format suitable for OpenGL rendering.
         // It iterates over the triangles in the mesh and extracts vertex positions to fill the mesh_data structure.
         size_t index = 0;
         // size_t cur_face = 0;
-        // for (const auto& tri : mesh.faces) {
-        for (size_t cur_face = 0; cur_face < mesh.faces.size(); ++cur_face) {
-            const auto& tri = mesh.faces[cur_face];
-            const auto& v0 = mesh.vertices[tri.v0].position;
-            const auto& v1 = mesh.vertices[tri.v1].position;
-            const auto& v2 = mesh.vertices[tri.v2].position;
+        for (size_t cur_face = 0; cur_face < mesh->faces.size(); ++cur_face) {
+            const auto& tri = mesh->faces[cur_face];
+            const auto& v0 = mesh->vertices[tri.v0].position;
+            const auto& v1 = mesh->vertices[tri.v1].position;
+            const auto& v2 = mesh->vertices[tri.v2].position;
             basevec3<T> edge1 = v1 - v0;
             basevec3<T> edge2 = v2 - v0;
             basevec3<T> face_normal = edge1.cross(edge2).normalize();
 
             const auto& norm = face_normal;
-                // mesh.attributes.face_normals[cur_face]; // assuming one normal per face for flat shading
+                // mesh->attributes.face_normals[cur_face]; // assuming one normal per face for flat shading
 
             mdata.vertices.push_back(static_cast<float>(v0.x()));
             mdata.vertices.push_back(static_cast<float>(v0.y()));
