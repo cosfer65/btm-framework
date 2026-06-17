@@ -337,6 +337,23 @@ namespace btm {
         return mMatrix * vec;
     }
 
+    template <typename T>
+    inline basevector<T, 3> project(const basevector<T, 3>& v, const basevector<T, 3>& onto) {
+        T denom = onto.length_sq();
+        if (denom == 0.0) {
+            return basevector<T, 3>{ 0.0, 0.0, 0.0 };
+        }
+        T t = dot(v, onto) / denom;
+        return onto * t;
+    }
+
+    template <typename T>
+    inline basevector<T, 3> reject(const basevector<T, 3>& v, const basevector<T, 3>& from) {
+        return v - project(v, from);
+    }
+
+
+
     //////////////////////////////////////////////////////////////////////////
 
     template <typename T> using basevec2 = basevector<T, 2>;
