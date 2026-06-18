@@ -3,9 +3,10 @@
 
 #include "vector.h"
 
-namespace btm {
+// Line, ray, and segment structures and related functions
 
-    template <typename T> 
+namespace btm {
+    template <typename T>
     struct line {
         basepoint3<T> origin;
         basevec3<T>   direction; // not necessarily normalized
@@ -49,8 +50,6 @@ namespace btm {
         basevec3<T> ab = s.b - s.a;
         return s.a + ab * t;
     }
-
 }
-
 
 #endif // !__line_h__

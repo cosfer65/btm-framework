@@ -2,11 +2,25 @@
 
 #include <vector>
 #include <algorithm>
-#include "bvh_node.hpp"
-#include "triangle.hpp"
-#include "line.hpp"
+#include "triangle.h"
+#include "line.h"
+
+// Bounding Volume Hierarchy
 
 namespace btm {
+    template <typename T>
+    struct BVHNode {
+        AABB<T> bounds;
+        int  leftChild{ -1 };
+        int  rightChild{ -1 };
+        int  start{ 0 };  // index into primitive array
+        int  count{ 0 };  // number of primitives
+
+        bool isLeaf() const {
+            return count > 0;
+        }
+    };
+
     template <typename T>
     struct HitInfo {
         T   t{ 0.0f };
@@ -25,28 +39,28 @@ namespace btm {
         template <typename T>
         inline AABB<T> triangleBounds(const Triangle<T>& tri) {
             basepoint3<T> mi{
-                std::min({tri.a.x, tri.b.x, tri.c.x}),
-                std::min({tri.a.y, tri.b.y, tri.c.y}),
-                std::min({tri.a.z, tri.b.z, tri.c.z})
+                std::min({tri.a.x(), tri.b.x(), tri.c.x()}),
+                std::min({tri.a.y(), tri.b.y(), tri.c.y()}),
+                std::min({tri.a.z(), tri.b.z(), tri.c.z()})
             };
             basepoint3<T> ma{
-                std::max({tri.a.x, tri.b.x, tri.c.x}),
-                std::max({tri.a.y, tri.b.y, tri.c.y}),
-                std::max({tri.a.z, tri.b.z, tri.c.z})
+                std::max({tri.a.x(), tri.b.x(), tri.c.x()}),
+                std::max({tri.a.y(), tri.b.y(), tri.c.y()}),
+                std::max({tri.a.z(), tri.b.z(), tri.c.z()})
             };
             return AABB<T>{ mi, ma };
         }
 
         template <typename T>
-        inline bool intersectAABB(const AABB<T>& box, const Ray<T>& ray, T& tmin, T& tmax) {
+        inline bool intersectAABB(const AABB<T>& box, const ray<T>& _ray, T& tmin, T& tmax) {
             tmin = 0.0f;
             tmax = std::numeric_limits<T>::max();
 
             for (int i = 0; i < 3; ++i) {
-                T origin = (i == 0 ? ray.origin.x : (i == 1 ? ray.origin.y : ray.origin.z));
-                T dir = (i == 0 ? ray.direction.x : (i == 1 ? ray.direction.y : ray.direction.z));
-                T minB = (i == 0 ? box.min.x : (i == 1 ? box.min.y : box.min.z));
-                T maxB = (i == 0 ? box.max.x : (i == 1 ? box.max.y : box.max.z));
+                T origin = (i == 0 ? _ray.origin.x() : (i == 1 ? _ray.origin.y() : _ray.origin.z()));
+                T dir = (i == 0 ? _ray.direction.x() : (i == 1 ? _ray.direction.y() : _ray.direction.z()));
+                T minB = (i == 0 ? box.min_p.x() : (i == 1 ? box.min_p.y() : box.min_p.z()));
+                T maxB = (i == 0 ? box.max_p.x() : (i == 1 ? box.max_p.y() : box.max_p.z()));
 
                 if (dir == 0.0f) {
                     if (origin < minB || origin > maxB) return false;
@@ -67,7 +81,7 @@ namespace btm {
         // Simple ray-triangle intersection (Möller–Trumbore)
         template <typename T>
         inline bool intersectTriangle(const Triangle<T>& tri,
-            const Ray<T>& ray,
+            const ray<T>& _ray,
             T& t,
             T& u,
             T& v)
@@ -75,18 +89,18 @@ namespace btm {
             const T EPS = static_cast<T>(1e-6);
             basevec3<T> edge1 = tri.b - tri.a;
             basevec3<T> edge2 = tri.c - tri.a;
-            basevec3<T> pvec = cross(ray.direction, edge2);
+            basevec3<T> pvec = cross(_ray.direction, edge2);
             T det = dot(edge1, pvec);
 
             if (std::fabs(det) < EPS) return false;
             T invDet = 1.0f / det;
 
-            basevec3<T> tvec = ray.origin - tri.a;
+            basevec3<T> tvec = _ray.origin - tri.a;
             u = dot(tvec, pvec) * invDet;
             if (u < 0.0f || u > 1.0f) return false;
 
             basevec3<T> qvec = cross(tvec, edge1);
-            v = dot(ray.direction, qvec) * invDet;
+            v = dot(_ray.direction, qvec) * invDet;
             if (v < 0.0f || u + v > 1.0f) return false;
 
             t = dot(edge2, qvec) * invDet;
@@ -122,23 +136,23 @@ namespace btm {
             }
 
             // Choose split axis by largest extent
-            Vec3 extents{
-                bounds.max.x - bounds.min.x,
-                bounds.max.y - bounds.min.y,
-                bounds.max.z - bounds.min.z
+            basevec3<T> extents{
+                bounds.max_p.x() - bounds.min_p.x(),
+                bounds.max_p.y() - bounds.min_p.y(),
+                bounds.max_p.z() - bounds.min_p.z()
             };
             int axis = 0;
-            if (extents.y > extents.x && extents.y >= extents.z) axis = 1;
-            else if (extents.z > extents.x && extents.z >= extents.y) axis = 2;
+            if (extents.y() > extents.x() && extents.y() >= extents.z()) axis = 1;
+            else if (extents.z() > extents.x() && extents.z() >= extents.y()) axis = 2;
 
             auto centerAxis = [&](int idx) {
-                const Triangle& tri = bvh.triangles[idx];
-                Point3 c{
-                    (tri.a.x + tri.b.x + tri.c.x) / 3.0f,
-                    (tri.a.y + tri.b.y + tri.c.y) / 3.0f,
-                    (tri.a.z + tri.b.z + tri.c.z) / 3.0f
+                const Triangle<T>& tri = bvh.triangles[idx];
+                basepoint3<T> c{
+                    (tri.a.x() + tri.b.x() + tri.c.x()) / 3.0f,
+                    (tri.a.y() + tri.b.y() + tri.c.y()) / 3.0f,
+                    (tri.a.z() + tri.b.z() + tri.c.z()) / 3.0f
                 };
-                return (axis == 0 ? c.x : (axis == 1 ? c.y : c.z));
+                return (axis == 0 ? c.x() : (axis == 1 ? c.y() : c.z()));
                 };
 
             int mid = (start + end) / 2;
@@ -185,16 +199,16 @@ namespace btm {
 
     template <typename T>
     inline bool intersect(const BVH<T>& bvh,
-        const Ray<T>& ray,
-        HitInfo& hit)
+        const ray<T>& _ray,
+        HitInfo<T>& hit)
     {
         if (bvh.nodes.empty()) return false;
 
         bool found = false;
         T closestT = std::numeric_limits<T>::max();
         int   closestIdx = -1;
-        Point3<T> hitPos;
-        Vec3<T>   hitNormal;
+        basepoint3<T> hitPos;
+        basevec3<T>   hitNormal;
 
         std::vector<int> stack;
         stack.reserve(bvh.nodes.size());
@@ -206,7 +220,7 @@ namespace btm {
 
             const BVHNode<T>& node = bvh.nodes[nodeIndex];
             T tmin, tmax;
-            if (!detail::intersectAABB(node.bounds, ray, tmin, tmax)) {
+            if (!detail::intersectAABB(node.bounds, _ray, tmin, tmax)) {
                 continue;
             }
 
@@ -216,13 +230,13 @@ namespace btm {
                     const Triangle<T>& tri = bvh.triangles[triIndex];
 
                     T t, u, v;
-                    if (detail::intersectTriangle(tri, ray, t, u, v)) {
+                    if (detail::intersectTriangle(tri, _ray, t, u, v)) {
                         if (t < closestT) {
                             closestT = t;
                             closestIdx = triIndex;
                             found = true;
 
-                            hitPos = ray.origin + ray.direction * t;
+                            hitPos = _ray.origin + _ray.direction * t;
                             hitNormal = normal(tri);
                         }
                     }

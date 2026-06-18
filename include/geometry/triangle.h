@@ -3,8 +3,9 @@
 #include "vector.h"
 #include "barycentric.h"
 
-namespace btm {
+// Triangle structure and related functions
 
+namespace btm {
     template <typename T>
     struct Triangle {
         basepoint3<T> a;
@@ -23,7 +24,7 @@ namespace btm {
     inline T area(const Triangle<T>& tri) {
         basevec3<T> ab = tri.b - tri.a;
         basevec3<T> ac = tri.c - tri.a;
-        return 0.5f * length(cross(ab, ac));
+        return 0.5f * (cross(ab, ac).length());
     }
 
     template <typename T>
@@ -37,7 +38,8 @@ namespace btm {
         return isInsideTriangle(b);
     }
 
-    // template <typename T>
-    // inline basepoint3<T> closestPoint(const Triangle<T>& tri, const basepoint3<T>& p);
-
-} // namespace themesh
+    template <typename T>
+    double signedVolume(const Triangle<T>& tri) {
+        return (tri.a.dot(tri.b.cross(tri.c))) / 6.0;
+    }
+} // namespace btm

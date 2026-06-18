@@ -16,8 +16,7 @@ namespace btm {
      * @return Unit normal vector.
      */
     template <typename T>
-    basevec3<T> calc_normal(const basevec3<T>& vP1, const basevec3<T>& vP2,
-        const basevec3<T>& vP3) {
+    basevec3<T> calc_normal(const basevec3<T>& vP1, const basevec3<T>& vP2, const basevec3<T>& vP3) {
         basevec3<T> vNormal;
         basevec3<T> vV1(vP2 - vP1);
         basevec3<T> vV2(vP3 - vP1);
@@ -35,8 +34,7 @@ namespace btm {
      * @return Area of the triangle.
      */
     template <typename T>
-    T triangle_area(const basevec3<T>& e1, const basevec3<T>& e2,
-        const basevec3<T>& e3) {
+    T triangle_area(const basevec3<T>& e1, const basevec3<T>& e2, const basevec3<T>& e3) {
         T l1 = e1.length();
         T l2 = e2.length();
         T l3 = e3.length();
@@ -128,8 +126,7 @@ namespace btm {
      * configurations.
      */
     template <typename T>
-    T corner_angle(const basevec3<T>& pa, const basevec3<T>& pb,
-        const basevec3<T>& pc) {
+    T corner_angle(const basevec3<T>& pa, const basevec3<T>& pb, const basevec3<T>& pc) {
         basevec3<T> u = pb - pa;
         basevec3<T> v = pc - pa;
 
@@ -171,8 +168,7 @@ namespace btm {
      * 'false'.
      */
     template <typename T>
-    bool isCoplanar(const basevec3<T>& u_f, const basevec3<T>& v_f,
-        const basevec3<T>& u_p, const basevec3<T>& v_p) {
+    bool isCoplanar(const basevec3<T>& u_f, const basevec3<T>& v_f, const basevec3<T>& u_p, const basevec3<T>& v_p) {
         basevec3<T> cross1 = u_f.cross(v_f);
         basevec3<T> cross2 = u_p.cross(v_p);
         basevec3<T> cross_res = cross1.cross(cross2);
@@ -213,8 +209,7 @@ namespace btm {
      *         `normal` is too small (degenerate).
      */
     template <typename T>
-    bool create_uv_reference_plane(const basevec3<T>& normal, basevec3<T>& u,
-        basevec3<T>& v) {
+    bool create_uv_reference_plane(const basevec3<T>& normal, basevec3<T>& u, basevec3<T>& v) {
         // Check for degenerate normal
         if (normal.length() < TOLLERANCE<float>)
             return false;
@@ -237,27 +232,6 @@ namespace btm {
             v.normalize();
         }
         return true;
-    }
-
-    template <typename T>
-    void expand_bbox(basematrix<T, 2, 3>& bbox, const basematrix<T, 2, 3>& part_bbox) {
-        for (size_t i = 0; i < 3; ++i) {
-            if (part_bbox(0, i) < bbox(0, i)) {
-                bbox(0, i) = part_bbox(0, i);
-            }
-            if (part_bbox(1, i) > bbox(1, i)) {
-                bbox(1, i) = part_bbox(1, i);
-            }
-        }
-    }
-
-    template <typename T>
-    basevec3<T> bbox_center(const basematrix<T, 2, 3>& bbox) {
-        return basevec3<T> (
-            (bbox(0, 0) + bbox(1, 0)) * 0.5f,
-            (bbox(0, 1) + bbox(1, 1)) * 0.5f,
-            (bbox(0, 2) + bbox(1, 2)) * 0.5f
-        );
     }
 } // namespace btm
 

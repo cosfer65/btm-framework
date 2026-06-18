@@ -133,7 +133,7 @@ namespace btm {
 
     template <typename T> struct meshEdge;
 
-    template <typename T> 
+    template <typename T>
     struct meshVertex {
         size_t id;
 
@@ -931,7 +931,7 @@ namespace btm {
     bool edges_are_parallel(const meshEdge<T>* e1, const meshEdge<T>* e2) {
         return e1->source == e2->source && e1->target == e2->target;
     }
-    
+
     template <typename T>
     void orient_mesh(btm::mesh<T>& mesh)
     {
@@ -975,8 +975,6 @@ namespace btm {
             } while (currentEdge != firstEdge);
         }
     }
-
-
 
     template <typename T, typename Tinput>
     mesh<T>* create_from_mesh_file(const std::string& fnm) {

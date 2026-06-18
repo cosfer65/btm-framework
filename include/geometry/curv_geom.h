@@ -1,4 +1,3 @@
-// File: btm_geometry.hpp
 #pragma once
 
 #include <vector>
@@ -8,7 +7,6 @@ namespace btm
 {
     namespace geometry
     {
-
         //----------------------
         // Core data structures
         //----------------------
@@ -44,10 +42,10 @@ namespace btm
 
         template <typename T>
         CurvatureTensor<T> computeCurvature(
-            const SurfacePoint<T> &p,
-            const basevec3<T> &xuu,
-            const basevec3<T> &xuv,
-            const basevec3<T> &xvv)
+            const SurfacePoint<T>& p,
+            const basevec3<T>& xuu,
+            const basevec3<T>& xuv,
+            const basevec3<T>& xvv)
         {
             // Build first and second fundamental forms
             T E = dot(p.xu, p.xu);
@@ -75,7 +73,7 @@ namespace btm
         // Parametric surfaces
         //----------------------
         template <typename T>
-        inline MetricTensor<T> computeMetric(const SurfacePoint<T> &p)
+        inline MetricTensor<T> computeMetric(const SurfacePoint<T>& p)
         {
             MetricTensor<T> m;
             m.E = dot(p.xu, p.xu);
@@ -85,17 +83,17 @@ namespace btm
         }
 
         template <typename T>
-        inline basevec3<T> computeNormal(const SurfacePoint<T> &p)
+        inline basevec3<T> computeNormal(const SurfacePoint<T>& p)
         {
             return normalize(cross(p.xu, p.xv));
         }
 
         template <typename T>
         inline Curvatures<T> computeHK(
-            const SurfacePoint<T> &p,
-            const basevec3<T> &xuu,
-            const basevec3<T> &xuv,
-            const basevec3<T> &xvv)
+            const SurfacePoint<T>& p,
+            const basevec3<T>& xuu,
+            const basevec3<T>& xuv,
+            const basevec3<T>& xvv)
         {
             MetricTensor<T> m = computeMetric(p);
 
@@ -113,10 +111,10 @@ namespace btm
 
         template <typename T>
         inline basematrix<T, 2, 2> shapeOperator(
-            const SurfacePoint<T> &p,
-            const basevec3<T> &xuu,
-            const basevec3<T> &xuv,
-            const basevec3<T> &xvv)
+            const SurfacePoint<T>& p,
+            const basevec3<T>& xuu,
+            const basevec3<T>& xuv,
+            const basevec3<T>& xvv)
         {
             MetricTensor<T> m = computeMetric(p);
 
@@ -126,14 +124,14 @@ namespace btm
 
             // fmat2 I  = { {m.E, m.F}, {m.F, m.G} };
             // fmat2 II = { {L,   M  }, {M,   N  } };
-            basematrix<T, 2, 2> I({m.E, m.F, m.F, m.G});
-            basematrix<T, 2, 2> II({L, M, M, N});
+            basematrix<T, 2, 2> I({ m.E, m.F, m.F, m.G });
+            basematrix<T, 2, 2> II({ L, M, M, N });
 
             return inverse(I) * II;
         }
 
         template <typename T>
-        inline TangentFrame<T> buildFrame(const SurfacePoint<T> &p)
+        inline TangentFrame<T> buildFrame(const SurfacePoint<T>& p)
         {
             TangentFrame<T> f;
             f.t1 = normalize(p.xu);
@@ -153,7 +151,7 @@ namespace btm
             int vertexCount() const;
 
             basepoint3<T> position(int v) const;
-            void setPosition(int v, const basepoint3<T> &p);
+            void setPosition(int v, const basepoint3<T>& p);
 
             std::vector<int> facesAroundVertex(int v) const;
             std::vector<int> edgesAroundVertex(int v) const;
@@ -168,7 +166,7 @@ namespace btm
         };
 
         template <typename T>
-        basevec3<T> computeVertexNormal(int v, const Mesh<T> &mesh)
+        basevec3<T> computeVertexNormal(int v, const Mesh<T>& mesh)
         {
             basevec3<T> n(0.0);
             for (auto f : mesh.facesAroundVertex(v))
@@ -181,7 +179,7 @@ namespace btm
         }
 
         template <typename T>
-        inline basevec3<T> vertexNormalAngleWeighted(int v, const Mesh<T> &mesh)
+        inline basevec3<T> vertexNormalAngleWeighted(int v, const Mesh<T>& mesh)
         {
             basevec3<T> n(0.0f);
             for (auto f : mesh.facesAroundVertex(v))
@@ -194,7 +192,7 @@ namespace btm
         }
 
         template <typename T>
-        inline basevec3<T> meanCurvatureNormal(int v, const Mesh<T> &mesh)
+        inline basevec3<T> meanCurvatureNormal(int v, const Mesh<T>& mesh)
         {
             basevec3<T> sum(0.0f);
             T area = 0.0;
@@ -211,7 +209,7 @@ namespace btm
         }
 
         template <typename T>
-        inline T cotangentWeight(const Mesh<T> &mesh, int v0, int v1)
+        inline T cotangentWeight(const Mesh<T>& mesh, int v0, int v1)
         {
             auto faces = mesh.facesAroundEdge(v0, v1);
             T w = 0.0;
@@ -233,7 +231,7 @@ namespace btm
         }
 
         template <typename T>
-        inline basevec3<T> laplacian(int v, const Mesh<T> &mesh)
+        inline basevec3<T> laplacian(int v, const Mesh<T>& mesh)
         {
             basevec3<T> sum(0.0f);
             T wsum = 0.0;
@@ -250,7 +248,7 @@ namespace btm
         }
 
         template <typename T>
-        inline void smoothMesh(Mesh<T> &mesh, T timestep)
+        inline void smoothMesh(Mesh<T>& mesh, T timestep)
         {
             std::vector<basevec3<T>> newPos(mesh.vertexCount());
 
@@ -265,11 +263,10 @@ namespace btm
         }
 
         template <typename T>
-        inline T refinementMetric(const Curvatures<T> &c, T targetSize)
+        inline T refinementMetric(const Curvatures<T>& c, T targetSize)
         {
             T k = std::max(std::abs(c.H), std::abs(c.K));
             return targetSize / (1.0 + targetSize * k);
         }
-
     } // namespace geometry
 } // namespace btm

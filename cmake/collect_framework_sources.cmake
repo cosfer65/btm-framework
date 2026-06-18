@@ -21,6 +21,8 @@ function (collect_frm_sources SRC_FILES)
                 "${subdir}/*.h"
             )
             list(APPEND LOCAL_FILES ${SUBDIR_FILES})
+            get_filename_component(dir_name ${subdir} NAME)
+            source_group("sources/${dir_name}" FILES ${SUBDIR_FILES})
         endif()
     endforeach()
 
@@ -41,6 +43,8 @@ function (collect_frm_sources SRC_FILES)
                 "${subdir}/*.h"
             )
             list(APPEND LOCAL_FILES ${SUBDIR_FILES})
+            get_filename_component(dir_name ${subdir} NAME)
+            source_group("headers/${dir_name}" FILES ${SUBDIR_FILES})
         endif()
     endforeach()
 

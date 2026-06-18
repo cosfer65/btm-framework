@@ -3,14 +3,15 @@
 #include "vector.h"
 #include "triangle.h"
 
-namespace btm {
+// Geometric predicates and orientation tests
 
+namespace btm {
     // 2D orientation using x,y components
     template <typename T>
     inline T orient2D(const basepoint3<T>& a, const basepoint3<T>& b, const basepoint3<T>& c) {
-        T ax = a.x, ay = a.y;
-        T bx = b.x, by = b.y;
-        T cx = c.x, cy = c.y;
+        T ax = a.x(), ay = a.y();
+        T bx = b.x(), by = b.y();
+        T cx = c.x(), cy = c.y();
         return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
     }
 
@@ -56,5 +57,4 @@ namespace btm {
         // For Phase 1, this is enough; later you can add full segment-triangle tests.
         return false;
     }
-
 } // namespace themesh

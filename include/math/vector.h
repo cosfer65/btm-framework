@@ -375,6 +375,11 @@ namespace btm {
     // uses both points and vectors.
     template <typename T> using basepoint3 = basevec3<T>;
 
+    template <typename T> 
+    T distance(const basepoint3<T>& p1, const basepoint3<T>& p2) {
+        return (p2 - p1).length();
+    }
+
     using fpoint3 = basepoint3<float>;
     using dpoint3 = basepoint3<double>;
 } // namespace btm

@@ -3,6 +3,8 @@
 
 #include "vector.h"
 
+// Barycentric coordinates structure and related functions
+
 namespace btm {
     template <typename T>
     struct barycentric_t {

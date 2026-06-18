@@ -4,12 +4,13 @@
 #include "triangle.h"
 #include "barycentric.h"
 
-namespace btm {
+// Closest point and distance functions for segments and triangles
 
+namespace btm {
     template <typename T>
-    inline basepoint3<T> closestPoint(const Segment<T>& s, const basepoint3<T>& p) {
+    inline basepoint3<T> closestPoint(const segment<T>& s, const basepoint3<T>& p) {
         basevec3<T> ab = s.b - s.a;
-        T abLenSq = lengthSquared(ab);
+        T abLenSq = ab.length_sq();
         if (abLenSq == 0.0f) {
             return s.a;
         }
@@ -20,7 +21,7 @@ namespace btm {
     }
 
     template <typename T>
-    inline T distanceSquared(const Segment<T>& s, const basepoint3<T>& p) {
+    inline T distanceSquared(const segment<T>& s, const basepoint3<T>& p) {
         basepoint3<T> cp = closestPoint(s, p);
         return distanceSquared(cp, p);
     }
@@ -67,9 +68,9 @@ namespace btm {
         // Inside face region
         barycentric_t<T> bc = barycentric(tri, p);
         return basepoint3<T>{
-            tri.a.x * bc.u + tri.b.x * bc.v + tri.c.x * bc.w,
-            tri.a.y * bc.u + tri.b.y * bc.v + tri.c.y * bc.w,
-            tri.a.z * bc.u + tri.b.z * bc.v + tri.c.z * bc.w
+            tri.a.x()* bc.u + tri.b.x() * bc.v + tri.c.x() * bc.w,
+                tri.a.y()* bc.u + tri.b.y() * bc.v + tri.c.y() * bc.w,
+                tri.a.z()* bc.u + tri.b.z() * bc.v + tri.c.z() * bc.w
         };
     }
 
@@ -78,5 +79,4 @@ namespace btm {
         basepoint3<T> cp = closestPoint(tri, p);
         return distanceSquared(cp, p);
     }
-
 } // namespace themesh

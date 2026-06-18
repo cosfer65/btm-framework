@@ -5,16 +5,19 @@
 #undef max
 
 #include "vector.h"
+#include "triangle.h"
+#include "aabb.h"
 #include <cstdint>
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
 #include <set>
+#include <queue>
 
 namespace btm {
     template <typename T>
     struct VertexExplicit {
-        basevec3<T> position;
+        basepoint3<T> position;
     };
 
     struct FaceExplicit {
@@ -55,11 +58,13 @@ namespace btm {
             return v0 == other.v0 && v1 == other.v1;
         }
     };
+
     template <class T>
     inline void hash_combine(std::size_t& seed, const T& v) {
         std::hash<T> hasher;
         seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
+
     struct EdgeKeyHash {
         std::size_t operator()(const EdgeKey& e) const noexcept {
             std::size_t seed = 0;
@@ -137,9 +142,9 @@ namespace btm {
         }
 
         void recalculateMesh() {}
-        basematrix<T, 2, 3> getBoundingBox() {
+        AABB<T> getBoundingBox() {
             if (vertices.size() == 0) {
-                return basematrix<T, 2, 3>(); // empty matrix
+                return AABB<T>(); // empty bounding box
             }
             T min_x = std::numeric_limits<T>::max();
             T min_y = std::numeric_limits<T>::max();
@@ -163,7 +168,7 @@ namespace btm {
                 if (coords.z() > max_z)
                     max_z = coords.z();
             }
-            basematrix<T, 2, 3> bbox({ min_x, min_y, min_z, max_x, max_y, max_z });
+            AABB<T> bbox({ min_x, min_y, min_z }, { max_x, max_y, max_z });
             return bbox;
         }
         void translate(const basevec3<T>& offset) {
@@ -273,6 +278,67 @@ namespace btm {
         const VertexExplicit<T>& get_vertex(std::uint32_t index) const {
             return vertices[index];
         }
+
+        void clear_faces_status() {
+            for (auto& face : faces) {
+                face.visited = false;
+            }
+        }
+
+        void orient()
+        {
+            int face_count = faces.size();
+            if (face_count == 0) return; // empty mesh, nothing to orient
+            clear_faces_status();
+
+            int seed = 0; // start from the first face
+            faces[0].visited = true;
+            std::queue<int> Q;
+            Q.push(seed);
+            int count = 1;
+            while (!Q.empty()) {
+                int f = Q.front(); Q.pop();
+
+                FaceExplicit& face = faces[f];
+                int nvF = 3; // Since it's a triangle
+
+                for (int e = 0; e < nvF; e++) {
+                    int a = face.v(e);
+                    int b = face.v((e + 1) % nvF);
+
+                    EdgeKey key(a, b);
+                    auto* edge = find_edge(key);
+                    if (!edge) continue; // edge not found, skip
+
+                    for (auto& face_id : edge->incident_faces) {
+                        if (face_id == f) continue; // skip the current face
+                        FaceExplicit& adj_face = faces[face_id];
+                        if (adj_face.visited) continue; // already visited
+                        int nvG = 3; // Since it's a triangle
+
+                        bool same_dir = false;
+                        for (int k = 0; k < nvG; k++) {
+                            int c = adj_face.v(k);
+                            int d = adj_face.v((k + 1) % nvG);
+                            if (c == a && d == b) {
+                                same_dir = true;
+                                break;
+                            }
+                        }
+                        if (same_dir)
+                        {
+                            adj_face.flip(); // flip the adjacent face to maintain consistent orientation
+                        }
+
+                        adj_face.visited = true;
+                        Q.push(face_id);
+                        ++count;
+                    }
+                }
+            }
+        }
+
+
     };
 
     template <typename T>
@@ -281,32 +347,21 @@ namespace btm {
         for (FaceExplicit& face : mesh.faces) {
             int nv = 3; // triangles only
 
-            auto tri = [&](int i0, int i1, int i2) {
+            auto tri_vol = [&](int i0, int i1, int i2) {
                 btm::basevec3<T> a = mesh.vertex_position(i0);
                 btm::basevec3<T> b = mesh.vertex_position(i1);
                 btm::basevec3<T> c = mesh.vertex_position(i2);
-                btm::basevec3<T> ab{ b.x() - a.x(), b.y() - a.y(), b.z() - a.z() };
-                btm::basevec3<T> ac{ c.x() - a.x(), c.y() - a.y(), c.z() - a.z() };
-                btm::basevec3<T> cr{
-                    ab.y() * ac.z() - ab.z() * ac.y(),
-                    ab.z() * ac.x() - ab.x() * ac.z(),
-                    ab.x() * ac.y() - ab.y() * ac.x()
-                };
-                return (a.x() * cr.x() + a.y() * cr.y() + a.z() * cr.z()) / 6.0;
+
+                return btm::signedVolume(btm::Triangle<T>{a, b, c});
                 };
 
-            // if (!face.flipped) {
-                 if (nv == 3) vol += tri(0, 1, 2);
-                 else          vol += tri(0, 1, 2) + tri(0, 2, 3);
-            // }
-            // else {
-            //     if (nv == 3) vol -= tri(0, 1, 2);
-            //     else          vol -= tri(0, 1, 2) + tri(0, 2, 3);
-            // }
+            vol += tri_vol(face.v0, face.v1, face.v2);
         }
 
         return vol;
     }
+
+
 } // namespace btm
 
 #endif // __mesh_explicit_h__

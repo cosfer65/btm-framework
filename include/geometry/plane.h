@@ -2,8 +2,9 @@
 
 #include "vector.h"
 
-namespace btm {
+// Plane structure and related functions
 
+namespace btm {
     template <typename T>
     struct Plane {
         basevec3<T>  normal; // assumed normalized
@@ -40,5 +41,4 @@ namespace btm {
     inline bool isBelow(const Plane<T>& plane, const basepoint3<T>& p) {
         return signedDistance(plane, p) < 0.0f;
     }
-
 } // namespace btm
