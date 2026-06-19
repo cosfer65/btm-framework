@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <set>
 #include <queue>
+#include <iterator>
+#include <stdexcept>
 
 namespace btm {
     template <typename T>

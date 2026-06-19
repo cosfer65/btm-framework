@@ -7,6 +7,7 @@
 #undef max
 
 #include <algorithm>
+#include <stdexcept>
 #include "vector.h"
 #include "gl_math.h"
 #include "shaders.h"

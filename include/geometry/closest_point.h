@@ -75,6 +75,12 @@ namespace btm {
     }
 
     template <typename T>
+    inline T distanceSquared(const basepoint3<T>& o, const basepoint3<T>& p) {
+        basevec3<T> diff = o - p;
+        return diff.length_sq();
+    }
+
+    template <typename T>
     inline T distanceSquared(const Triangle<T>& tri, const basepoint3<T>& p) {
         basepoint3<T> cp = closestPoint(tri, p);
         return distanceSquared(cp, p);
