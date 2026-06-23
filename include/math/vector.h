@@ -382,6 +382,7 @@ namespace btm {
 
     using fpoint3 = basepoint3<float>;
     using dpoint3 = basepoint3<double>;
+
 } // namespace btm
 
 #endif // __vector_h__

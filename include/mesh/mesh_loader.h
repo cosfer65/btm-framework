@@ -1,6 +1,7 @@
 #ifndef __mesh_loader__
 #define __mesh_loader__
 
+#include <fstream>
 #include <string>
 #include <vector>
 

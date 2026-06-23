@@ -16,10 +16,13 @@ namespace btm {
         if (m_mesh_data.num_vertices == 0)
             return;
 
+        clear_vao();
+
         draw_elements = dr_el;
         draw_mode = drmode;
 
         int idx = 0;
+
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);

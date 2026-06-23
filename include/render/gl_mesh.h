@@ -26,6 +26,33 @@ namespace btm {
         std::vector<float> normals;         ///< Flat array of normal vectors (x, y, z).
         std::vector<unsigned int> indices;  ///< Indices defining mesh faces.
         std::vector<float> curvatures;      ///< Optional array of curvature values per meshVertex (if available).
+        int add_vertex(const fvec3& v) {
+            vertices.push_back(v.x());
+            vertices.push_back(v.y());
+            vertices.push_back(v.z());
+            num_vertices = vertices.size();
+            return (int)(num_vertices - 1);
+        }
+        int add_indices(unsigned int i1, unsigned int i2, unsigned int i3) {
+            indices.push_back(i1);
+            indices.push_back(i2);
+            indices.push_back(i3);
+            num_indices = indices.size();
+            return (int)(num_indices - 1);
+        }
+        int add_indices(unsigned int i1, unsigned int i2) {
+            indices.push_back(i1);
+            indices.push_back(i2);
+            num_indices = indices.size();
+            return (int)(num_indices - 1);
+        }
+        int add_normal(const fvec3& n) {
+            normals.push_back(n.x());
+            normals.push_back(n.y());
+            normals.push_back(n.z());
+            num_normals = normals.size();
+            return (int)(num_normals - 1);
+        }
     };
 
     /**

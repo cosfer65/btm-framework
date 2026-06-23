@@ -36,7 +36,7 @@ namespace btm
     {
         HMENU submenu = CreatePopupMenu();
 
-        AppendMenuA(m_MenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(submenu), label.c_str());
+        AppendMenu(m_MenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(submenu), label.c_str());
         return submenu;
     }
 
@@ -44,7 +44,7 @@ namespace btm
     {
         int id = m_NextId++;
 
-        AppendMenuA(parent, MF_STRING, id, label.c_str());
+        AppendMenu(parent, MF_STRING, id, label.c_str());
         register_callback(id, std::move(cb));
 
         return id;
@@ -52,7 +52,7 @@ namespace btm
 
     void Menu::add_separator(HMENU parent)
     {
-        AppendMenuA(parent, MF_SEPARATOR, 0, nullptr);
+        AppendMenu(parent, MF_SEPARATOR, 0, nullptr);
     }
 
     void Menu::remove_item(int commandId)

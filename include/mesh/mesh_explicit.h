@@ -7,6 +7,7 @@
 #include "vector.h"
 #include "triangle.h"
 #include "aabb.h"
+#include "geometry.h"
 #include <cstdint>
 #include <vector>
 #include <unordered_map>
@@ -103,9 +104,51 @@ namespace btm {
         std::vector<FaceAdjacency> face_adjacency;
         std::unordered_map<EdgeKey, EdgeExplicit, EdgeKeyHash> edges;
         MeshAttributes<T> attributes;
+        T m_average_edge_length = T(0);
 
     public:
         MeshExplicit() = default;
+
+        void computeVertexNormals() {
+            attributes.vertex_normals.assign(vertices.size(), basevec3<T>{}); // reset normals
+
+            for (size_t i = 0; i < vertices.size(); ++i) {
+                basevec3<T> norm = basevec3<T>(0, 0, 0);
+                for (size_t j=0; j < adjacency[i].incident_faces.size(); ++j) {
+                    int i1, i2;
+                    opposite_vertices(faces[adjacency[i].incident_faces[j]], i, i1, i2);
+                    const basevec3<T>& v0 = vertices[i].position;
+                    const basevec3<T>& v1 = vertices[i1].position;
+                    const basevec3<T>& v2 = vertices[i2].position;
+
+                    T a0 = fabs(corner_angle<T>(v0, v1, v2));
+                    norm += face_normal(adjacency[i].incident_faces[j])*a0;
+                }
+                attributes.vertex_normals[i] = norm.normalize();
+            }
+        }
+
+        void opposite_vertices(const FaceExplicit& face, std::uint32_t vertex_index, int& i1, int& i2) const {
+            if (face.v0 == vertex_index) {
+                i1 = face.v1;
+                i2 = face.v2;
+            }
+            else if (face.v1 == vertex_index) {
+                i1 = face.v2;
+                i2 = face.v0;
+            }
+            else if (face.v2 == vertex_index) {
+                i1 = face.v0;
+                i2 = face.v1;
+            }
+            else {
+                throw std::runtime_error("Vertex index not found in face");
+            }
+        }
+
+        T average_edge_length() const {
+            return m_average_edge_length;
+        }
 
         basevec3<T> vertex_position(std::uint32_t index) const {
             return vertices[index].position;
@@ -118,6 +161,21 @@ namespace btm {
                 return nullptr;
             }
             return &(it->second);
+        }
+
+        basepoint3<T> face_center(int face_index) const {
+            const auto& face = faces[face_index];
+            return (vertices[face.v0].position + vertices[face.v1].position + vertices[face.v2].position) / T(3);
+        }
+
+        basevec3<T> face_normal(int face_index) const {
+            const auto& face = faces[face_index];
+            const auto& v0 = vertices[face.v0].position;
+            const auto& v1 = vertices[face.v1].position;
+            const auto& v2 = vertices[face.v2].position;
+            basevec3<T> edge1 = v1 - v0;
+            basevec3<T> edge2 = v2 - v0;
+            return edge1.cross(edge2).normalize();
         }
 
         void adjacent_faces(std::uint32_t face, std::vector<std::uint32_t>& out_faces) const {
@@ -143,7 +201,17 @@ namespace btm {
                 excludeCondition);
         }
 
-        void recalculateMesh() {}
+        void recalculateMesh() {
+            T total_edge_length = T(0);
+            for (const auto& edge_pair : edges) {
+                const EdgeExplicit& edge = edge_pair.second;
+                const basevec3<T>& v0 = vertices[edge.desc.v0].position;
+                const basevec3<T>& v1 = vertices[edge.desc.v1].position;
+                total_edge_length += (v1 - v0).length();
+            }
+            m_average_edge_length = total_edge_length / static_cast<T>(edges.size());
+        }
+
         AABB<T> getBoundingBox() {
             if (vertices.size() == 0) {
                 return AABB<T>(); // empty bounding box
@@ -222,6 +290,7 @@ namespace btm {
                 basevec3<T> face_normal = edge1.cross(edge2).normalize();
                 attributes.face_normals.push_back(face_normal);
             }
+            computeVertexNormals();
         }
 
         void reserve(std::size_t vertex_count, std::size_t face_count) {

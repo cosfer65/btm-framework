@@ -265,4 +265,31 @@ namespace btm
         return theApp->get_gl_context();
     }
 
+    void SetAppIcon(int resource_id) {
+        HWND hwnd = theApp->get_main_window(get_hInstance())->hWnd;
+        HINSTANCE hInst = nullptr;// ghInstance;
+        // Load a 64×64 icon for big icon (task switcher)
+        HICON hIconLarge = (HICON)LoadImage(
+            hInst,
+            MAKEINTRESOURCE(resource_id),   // icon ID from .rc file
+            IMAGE_ICON,
+            64, 64,
+            LR_DEFAULTCOLOR
+        );
+
+        // Load a 32×32 icon for small (title bar)
+        HICON hIconSmall = (HICON)LoadImage(
+            hInst,
+            MAKEINTRESOURCE(resource_id),
+            IMAGE_ICON,
+            32, 32,
+            LR_DEFAULTCOLOR
+        );
+
+        // Apply icons
+        SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIconLarge);
+        SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
+    }
+
+
 } // namespace btm

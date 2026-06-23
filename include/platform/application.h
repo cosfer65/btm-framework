@@ -64,5 +64,6 @@ namespace btm
     bool begin_render();
     void end_render();
     GLContext* get_current_gl_context();
+    void SetAppIcon(int resource_id);
 
 } // namespace btm

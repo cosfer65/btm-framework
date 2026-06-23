@@ -91,7 +91,25 @@ namespace btm {
         /**
          * @brief Virtual destructor.
          */
-        virtual ~gl_prim() {}
+        virtual ~gl_prim() {
+            clear_vao();
+        }
+
+        void clear_vao() {
+            if (vao) {
+                glDeleteVertexArrays(1, &vao);
+                vao = 0;
+            }
+        }
+
+        void clear_mesh_data() {
+            m_mesh_data.vertices.clear();
+            m_mesh_data.normals.clear();
+            m_mesh_data.indices.clear();
+            m_mesh_data.num_vertices = 0;
+            m_mesh_data.num_normals = 0;
+            m_mesh_data.num_indices = 0;
+        }
 
         /**
          * @brief Initializes the primitive from mesh data.

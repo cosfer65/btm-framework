@@ -1,6 +1,7 @@
 #ifndef __cmd_target_h__
 #define __cmd_target_h__
 
+#include <Windows.h>
 #include <map>
 
 typedef int (*mouse_callback)(int x, int y, unsigned __int64 extra);
