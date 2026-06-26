@@ -1,6 +1,7 @@
 #ifndef __vector_h__
 #define __vector_h__
 
+#include <cassert>
 #include "matrix.h"
 
 namespace btm {
@@ -16,7 +17,6 @@ namespace btm {
     template <typename T, size_t C> class basevector {
         static_assert(C >= 2 && C <= 4,
             "basevector only supports 2, 3, or 4 components");
-        T zero = T(0);
 
     public:
         /// Raw storage for components. Indexed as data[0]..data[C-1].
@@ -32,12 +32,12 @@ namespace btm {
          */
         T& x() { return this->data[0]; }
         T& y() { return this->data[1]; }
-        T& z() { return C > 2 ? this->data[2] : zero; }
-        T& w() { return C > 3 ? this->data[3] : zero; }
+        T& z() { assert(C > 2); return this->data[2]; }
+        T& w() { assert(C > 3); return this->data[3]; }
         T x() const { return this->data[0]; }
         T y() const { return this->data[1]; }
-        T z() const { return C > 2 ? this->data[2] : zero; }
-        T w() const { return C > 3 ? this->data[3] : zero; }
+        T z() const { return C > 2 ? this->data[2] : T(0); }
+        T w() const { return C > 3 ? this->data[3] : T(0); }
 
         /// Default ctor: zero-initialized by the data member initializer.
         basevector() {}

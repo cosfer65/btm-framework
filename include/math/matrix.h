@@ -22,10 +22,9 @@ namespace btm {
     template <typename T, size_t ROWS, size_t COLS>
     class basematrix {
     public:
-        T* data = new T[ROWS * COLS]{ T(0) };
-        size_t m_rows = ROWS;
-        size_t m_cols = COLS;
-        size_t data_length = ROWS * COLS;
+        // data_length is a compile-time constant, so we can use it in loops and other places where a constant expression is required.
+        const size_t data_length = ROWS * COLS;
+        T* data = new T[data_length]{ T(0) };
 
         basematrix() {
         }
@@ -60,19 +59,19 @@ namespace btm {
         }
 
         size_t rows() const {
-            return m_rows;
+            return ROWS;
         }
 
         size_t cols() const {
-            return m_cols;
+            return COLS;
         }
 
         T& operator()(size_t row, size_t col) {
-            return data[row * m_cols + col];
+            return data[row * COLS + col];
         }
 
         const T& operator()(size_t row, size_t col) const {
-            return data[row * m_cols + col];
+            return data[row * COLS + col];
         }
 
         basematrix<T, ROWS, COLS>& operator=(const basematrix<T, ROWS, COLS>& m) {
@@ -134,15 +133,15 @@ namespace btm {
 
         void loadIdentity() {
             memset(this->data, 0, this->data_length * sizeof(T));
-            size_t D = std::min<size_t>(m_rows, m_cols);
+            size_t D = std::min<size_t>(ROWS, COLS);
             for (size_t i = 0; i < D; ++i) {
-                this->data[i * m_cols + i] = T(1);
+                this->data[i * COLS + i] = T(1);
             }
         }
 
         void swap_cols(size_t c1, size_t c2) {
             T temp;
-            for (size_t i = 0; i < m_rows; ++i) {
+            for (size_t i = 0; i < ROWS; ++i) {
                 temp = (*this)(i, c1);
                 (*this)(i, c1) = (*this)(i, c2);
                 (*this)(i, c2) = temp;
@@ -151,7 +150,7 @@ namespace btm {
 
         void swap_rows(size_t r1, size_t r2) {
             T temp;
-            for (size_t i = 0; i < m_cols; ++i) {
+            for (size_t i = 0; i < COLS; ++i) {
                 temp = (*this)(r1, i);
                 (*this)(r1, i) = (*this)(r2, i);
                 (*this)(r2, i) = temp;
@@ -224,23 +223,23 @@ namespace btm {
 
 #ifdef _DEBUG
         void print(const std::string& label = "") const {
-            for (size_t c = 0; c < m_cols; ++c) {
+            for (size_t c = 0; c < COLS; ++c) {
                 std::cout << "--";
             }
             std::cout << std::endl;
             std::cout << label;
-            for (size_t r = 0; r < m_rows; ++r) {
-                for (size_t c = 0; c < m_cols; ++c) {
-                    std::cout << data[r * m_cols + c] << " ";
+            for (size_t r = 0; r < ROWS; ++r) {
+                for (size_t c = 0; c < COLS; ++c) {
+                    std::cout << data[r * COLS + c] << " ";
                 }
                 std::cout << std::endl;
             }
         }
         void print_by_cols(const std::string& label = "") const {
             std::cout << label;
-            for (size_t c = 0; c < m_cols; ++c) {
-                for (size_t r = 0; r < m_rows; ++r) {
-                    std::cout << data[r * m_cols + c] << " ";
+            for (size_t c = 0; c < COLS; ++c) {
+                for (size_t r = 0; r < ROWS; ++r) {
+                    std::cout << data[r * COLS + c] << " ";
                 }
                 std::cout << std::endl;
             }
