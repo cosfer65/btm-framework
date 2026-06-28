@@ -23,23 +23,27 @@ namespace btm {
     class basematrix {
     public:
         // data_length is a compile-time constant, so we can use it in loops and other places where a constant expression is required.
-        const size_t data_length = ROWS * COLS;
-        T* data = new T[data_length]{ T(0) };
+        // const size_t data_length = ROWS * COLS;
+        T data[ROWS * COLS]{ T(0) };
+
+        size_t data_length() const {
+            return ROWS * COLS;
+        }
 
         basematrix() {
         }
 
         basematrix(const basematrix<T,ROWS,COLS>& m) {
-            memcpy(data, m.data, data_length * sizeof(T));
+            memcpy(data, m.data, ROWS * COLS * sizeof(T));
         }
 
         basematrix(const T* data) {
-            memcpy(this->data, data, data_length * sizeof(T));
+            memcpy(this->data, data, ROWS * COLS * sizeof(T));
         }
 
         template <typename Q> requires std::is_arithmetic_v<Q>
         basematrix(Q initial_value) {
-            for (int i = 0; i < data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 this->data[i] = T(initial_value);
         }
 
@@ -49,13 +53,12 @@ namespace btm {
                 this->data[i] = v;
                 ++i;
                 // check to prevent out of bounds error
-                if (i >= this->data_length)
+                if (i >= ROWS * COLS)
                     break;
             }
         }
 
         virtual ~basematrix() {
-            delete[] data;
         }
 
         size_t rows() const {
@@ -75,7 +78,7 @@ namespace btm {
         }
 
         basematrix<T, ROWS, COLS>& operator=(const basematrix<T, ROWS, COLS>& m) {
-            memcpy(data, m.data, data_length * sizeof(T));
+            memcpy(data, m.data, ROWS * COLS * sizeof(T));
             return *this;
         }
 
@@ -92,47 +95,47 @@ namespace btm {
         }
 
         basematrix<T, ROWS, COLS>& operator+=(const basematrix<T, ROWS, COLS>& m) {
-            for (int i = 0; i < data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 this->data[i] += m.data[i];
             return *this;
         }
 
         basematrix<T, ROWS, COLS>& operator-=(const basematrix<T, ROWS, COLS>& m) {
-            for (int i = 0; i < data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 this->data[i] -= m.data[i];
             return *this;
         }
 
         basematrix<T, ROWS, COLS> operator-(void) {
             basematrix<T, ROWS, COLS> res(*this);
-            for (int i = 0; i < this->data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 res.data[i] = -res.data[i];
             return res;
         }
 
         template <typename Q> requires std::is_arithmetic_v<Q>
         basematrix<T, ROWS, COLS>& scale(Q sc) {
-            for (int i = 0; i < data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 this->data[i] *= T(sc);
             return *this;
         }
 
         template <typename Q> requires std::is_arithmetic_v<Q>
         basematrix<T, ROWS, COLS>& operator*=(Q v) {
-            for (int i = 0; i < data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 this->data[i] *= T(v);
             return *this;
         }
 
         template <typename Q> requires std::is_arithmetic_v<Q>
         basematrix<T, ROWS, COLS>& operator/=(Q v) {
-            for (int i = 0; i < data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 this->data[i] /= T(v);
             return *this;
         }
 
         void loadIdentity() {
-            memset(this->data, 0, this->data_length * sizeof(T));
+            memset(this->data, 0, ROWS * COLS * sizeof(T));
             size_t D = std::min<size_t>(ROWS, COLS);
             for (size_t i = 0; i < D; ++i) {
                 this->data[i * COLS + i] = T(1);
@@ -184,7 +187,7 @@ namespace btm {
         template <typename Q> requires std::is_arithmetic_v<Q>
         basematrix<T, ROWS, COLS> operator*(Q v) const {
             basematrix<T, ROWS, COLS> res;
-            for (int i = 0; i < this->data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 res.data[i] = (*this)[i] * T(v);
             return res;
         }
@@ -192,7 +195,7 @@ namespace btm {
         template <typename Q> requires std::is_arithmetic_v<Q>
         basematrix<T, ROWS, COLS> operator/(Q v) const {
             basematrix<T, ROWS, COLS> res;
-            for (int i = 0; i < this->data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 res.data[i] = (*this)[i] / T(v);
             return res;
         }
@@ -200,7 +203,7 @@ namespace btm {
         template <typename T, size_t ROWS, size_t COLS>
         basematrix<T, ROWS, COLS> operator+(const basematrix<T, ROWS, COLS>& op2) const {
             basematrix<T, ROWS, COLS> res(*this);
-            for (int i = 0; i < res.data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 res.data[i] += op2.data[i];
             return res;
         }
@@ -208,13 +211,13 @@ namespace btm {
         template <typename T, size_t ROWS, size_t COLS>
         basematrix<T, ROWS, COLS> operator-(const basematrix<T, ROWS, COLS>& op2) const {
             basematrix<T, ROWS, COLS> res(*this);
-            for (int i = 0; i < res.data_length; ++i)
+            for (int i = 0; i < ROWS * COLS; ++i)
                 res.data[i] -= op2.data[i];
             return res;
         }
 
         bool operator==(const basematrix<T, ROWS, COLS>& B) const {
-            for (size_t i = 0; i < this->data_length; ++i) {
+            for (size_t i = 0; i < ROWS * COLS; ++i) {
                 if (T(fabs((*this)[i] - B[i]))>TOLLERANCE<T>)
                     return false;
             }
