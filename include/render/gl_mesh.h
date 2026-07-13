@@ -154,6 +154,17 @@ namespace btm {
      */
     template <typename T>
     bool collect_mesh_data(const mesh<T>* mesh, mesh_data& mdata) {
+        static fvec3 red = fvec3(1, 0, 0);
+        static fvec3 blue = fvec3(0, 0, 1);
+        static fvec3 green = fvec3(0, 1, 0);
+        static fvec3 yellow = fvec3(1, 1, 0);
+        static fvec3 magenta = fvec3(1, 0, 1);
+        static fvec3 cyan = fvec3(0, 1, 1);
+        static fvec3 white = fvec3(1, 1, 1);
+        static fvec3 black = fvec3(0, 0, 0);
+        static fvec3 gray = fvec3(0.5f, 0.5f, 0.5f);
+        static std::vector<fvec3> colors = { red, blue, green, yellow, magenta, cyan, white, black, gray };
+
         // build data from half-edge mesh based on its faces
         // this allows for proper duplication of vertices/normals per face
         // it is better for flat shading
@@ -174,17 +185,6 @@ namespace btm {
                 mdata.normals.push_back(face_normal.z());
                 mdata.indices.push_back(static_cast<unsigned int>(i1));
                 if (mesh->curvatures_computed()) {
-                    fvec3 red = fvec3(1, 0, 0);
-                    fvec3 blue = fvec3(0, 0, 1);
-                    fvec3 green = fvec3(0, 1, 0);
-                    fvec3 yellow = fvec3(1, 1, 0);
-                    fvec3 magenta = fvec3(1, 0, 1);
-					fvec3 cyan = fvec3(0, 1, 1);
-					fvec3 white = fvec3(1, 1, 1);
-					fvec3 black = fvec3(0, 0, 0);
-					fvec3 gray = fvec3(0.5f, 0.5f, 0.5f);
-                    std::vector<fvec3> colors = { red, blue, green, yellow, magenta, cyan, white, black, gray };
-
                     int curvature_index = vertices.at(v_ids[i])->curvature_map_value;
                     fvec3 color = colors[curvature_index];
 
@@ -207,21 +207,32 @@ namespace btm {
 
     template <typename T>
     void collect_mesh_data(const MeshExplicit<T>* mesh, mesh_data& mdata) {
+        static fvec3 red = fvec3(1, 0, 0);
+        static fvec3 blue = fvec3(0, 0, 1);
+        static fvec3 green = fvec3(0, 1, 0);
+        static fvec3 yellow = fvec3(1, 1, 0);
+        static fvec3 magenta = fvec3(1, 0, 1);
+        static fvec3 cyan = fvec3(0, 1, 1);
+        static fvec3 white = fvec3(1, 1, 1);
+        static fvec3 black = fvec3(0, 0, 0);
+        static fvec3 gray = fvec3(0.5f, 0.5f, 0.5f);
+        static std::vector<fvec3> colors = { red, blue, green, yellow, magenta, cyan, white, black, gray };
+
+
+        bool curvatures_computed = mesh->vertex_curvatures.size() > 0;
         // This function converts the MeshExplicit data into a flat format suitable for OpenGL rendering.
         // It iterates over the triangles in the mesh and extracts vertex positions to fill the mesh_data structure.
         size_t index = 0;
-        // size_t cur_face = 0;
-        for (size_t cur_face = 0; cur_face < mesh->faces.size(); ++cur_face) {
-            const auto& tri = mesh->faces[cur_face];
-            const auto& v0 = mesh->vertices[tri.v0].position;
-            const auto& v1 = mesh->vertices[tri.v1].position;
-            const auto& v2 = mesh->vertices[tri.v2].position;
-            basevec3<T> edge1 = v1 - v0;
-            basevec3<T> edge2 = v2 - v0;
-            basevec3<T> face_normal = edge1.cross(edge2).normalize();
+        // do NOT call size() on the vector all the time, as functioncalls are expensive
+        // instead, store the size in a variable and use that for the loop condition
+        size_t num_faces = mesh->faces.size(); 
+        for (size_t cur_face = 0; cur_face < num_faces; ++cur_face) {
+            const auto& face = mesh->faces[cur_face];
+            const auto& v0 = mesh->vertices[face.v0].position;
+            const auto& v1 = mesh->vertices[face.v1].position;
+            const auto& v2 = mesh->vertices[face.v2].position;
 
-            const auto& norm = face_normal;
-                // mesh->attributes.face_normals[cur_face]; // assuming one normal per face for flat shading
+            const auto& norm = face.normal;
 
             mdata.vertices.push_back(static_cast<float>(v0.x()));
             mdata.vertices.push_back(static_cast<float>(v0.y()));
@@ -230,6 +241,13 @@ namespace btm {
             mdata.normals.push_back(static_cast<float>(norm.x()));
             mdata.normals.push_back(static_cast<float>(norm.y()));
             mdata.normals.push_back(static_cast<float>(norm.z()));
+
+            if (curvatures_computed) {
+                const auto& c0 = mesh->vertex_curvatures[face.v0];
+                mdata.curvatures.push_back(colors[c0.curvature_map_value].x());
+                mdata.curvatures.push_back(colors[c0.curvature_map_value].y());
+                mdata.curvatures.push_back(colors[c0.curvature_map_value].z());
+            }
 
             mdata.indices.push_back(static_cast<unsigned int>(index));
             ++index;
@@ -242,6 +260,13 @@ namespace btm {
             mdata.normals.push_back(static_cast<float>(norm.y()));
             mdata.normals.push_back(static_cast<float>(norm.z()));
 
+            if (curvatures_computed) {
+                const auto& c1 = mesh->vertex_curvatures[face.v1];
+                mdata.curvatures.push_back(colors[c1.curvature_map_value].x());
+                mdata.curvatures.push_back(colors[c1.curvature_map_value].y());
+                mdata.curvatures.push_back(colors[c1.curvature_map_value].z());
+            }
+
             mdata.indices.push_back(static_cast<unsigned int>(index));
             ++index;
 
@@ -253,13 +278,20 @@ namespace btm {
             mdata.normals.push_back(static_cast<float>(norm.y()));
             mdata.normals.push_back(static_cast<float>(norm.z()));
 
+            if (curvatures_computed) {
+                const auto& c2 = mesh->vertex_curvatures[face.v2];
+                mdata.curvatures.push_back(colors[c2.curvature_map_value].x());
+                mdata.curvatures.push_back(colors[c2.curvature_map_value].y());
+                mdata.curvatures.push_back(colors[c2.curvature_map_value].z());
+            }
+
             mdata.indices.push_back(static_cast<unsigned int>(index));
             ++index;
-            // ++cur_face;
         }
         mdata.num_vertices = mdata.vertices.size();
         mdata.num_normals = mdata.normals.size();
         mdata.num_indices = mdata.indices.size();
+        mdata.num_curvatures = mdata.curvatures.size();
     }
 
 

@@ -263,7 +263,7 @@ namespace btm {
             if (fovDeg <= 0.0f || fovDeg >= 179.0f) {
                 throw std::invalid_argument("FOV must be between 0 and 179 degrees.");
             }
-            if (objWidth <= 0.0f || objHeight <= 0.0f) {
+            if (objWidth < 0.0f || objHeight < 0.0f) {
                 throw std::invalid_argument("Object dimensions must be positive.");
             }
             if (aspect <= 0.0f) {

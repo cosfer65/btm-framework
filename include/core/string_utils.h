@@ -81,5 +81,45 @@ inline std::vector<std::string> splitString(const std::string& str, char delimit
     return tokens;
 }
 
+/**
+ * @brief Splits a C-style string into tokens based on a delimiter character.
+ * 
+ * This function parses the input string and extracts substrings separated by the
+ * specified delimiter character. Empty tokens (consecutive delimiters) are skipped.
+ * The resulting tokens are appended to the provided vector.
+ * 
+ * @param str The null-terminated input string to split. Must not be nullptr.
+ * @param tokens Reference to a vector where the extracted tokens will be stored.
+ *               Tokens are appended to the vector (existing content is preserved).
+ * @param delimiter The character used to split the string. Defaults to space (' ').
+ * 
+ * @note This function does not clear the tokens vector before adding new elements.
+ * @note Consecutive delimiters do not create empty tokens.
+ * @note Leading and trailing delimiters are handled correctly (no empty tokens created).
+ * 
+ * @example
+ * std::vector<std::string> tokens;
+ * splitString("hello world test", tokens);
+ * // tokens now contains: ["hello", "world", "test"]
+ */
+inline void splitString(const char* str, std::vector<std::string>& tokens, char delimiter = ' ') {
+    size_t start = 0;
+    size_t current = 0;
+
+    while (str[current] != '\0') {
+        if (str[current] == delimiter) {
+            if (current > start) {
+                tokens.emplace_back(str + start, current - start);
+            }
+            start = current + 1;
+        }
+        ++current;
+    }
+    
+    if (current > start) {
+        tokens.emplace_back(str + start, current - start);
+    }
+}
+
 
 #endif // __string_utils__

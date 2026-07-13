@@ -143,8 +143,7 @@ namespace btm {
         basevec3<T> position;
         basevec3<T> normal;
 
-        bool is_boundary =
-            false; // this can be used to mark boundary vertices, which is useful
+        bool is_boundary = false; // this can be used to mark boundary vertices, which is useful
         // for curvature estimation and other algorithms that need to
         // treat boundaries differently
 
@@ -178,8 +177,7 @@ namespace btm {
                 std::pair<meshVertex<T>*, meshVertex<T>*> other =
                     face->getIncidentVertices(id);
                 if (other.first && other.second) {
-                    T angle = corner_angle(position, other.first->position,
-                        other.second->position);
+                    T angle = corner_angle(position, other.first->position, other.second->position);
                     angle_sum += angle;
                 }
             }
@@ -279,8 +277,7 @@ namespace btm {
             }
         }
 
-        std::pair<meshVertex<T>*, meshVertex<T>*>
-            getIncidentVertices(size_t v_id) {
+        std::pair<meshVertex<T>*, meshVertex<T>*> getIncidentVertices(size_t v_id) {
             size_t vCount = vertices.size();
             for (size_t i = 0; i < vCount; ++i) {
                 meshVertex<T>* v = vertices[i];
@@ -587,8 +584,7 @@ namespace btm {
                     // faces)
                     meshVertex<T>* v1 = nullptr;
                     meshVertex<T>* v2 = nullptr;
-                    std::pair<meshVertex<T>*, meshVertex<T>*> other =
-                        f->getIncidentVertices(v->id);
+                    std::pair<meshVertex<T>*, meshVertex<T>*> other = f->getIncidentVertices(v->id);
                     v1 = other.first;
                     v2 = other.second;
                     if (!v1 || !v2)
@@ -600,8 +596,7 @@ namespace btm {
                     // Total area of this triangle
                     T area_T = T(0.5) * PQ.cross(PR).length();
                     // Check if triangle is obtuse
-                    bool is_obtuse =
-                        PQ.dot(PR) < 0 || (-PQ).dot(QR) < 0 || (-PR).dot(-QR) < 0;
+                    bool is_obtuse = PQ.dot(PR) < 0 || (-PQ).dot(QR) < 0 || (-PR).dot(-QR) < 0;
                     if (!is_obtuse) {
                         // Voronoi Area using cotangent weights
                         T cot_alpha = PQ.dot(PR) / PQ.cross(PR).length();
@@ -715,8 +710,7 @@ namespace btm {
                 v->curvature_info
                     .reset(); // reset curvature info to default values (you can
                 // implement actual curvature estimation here)
-                v->curvature_map_value =
-                    0; // reset curvature map value to default (you can compute an
+                v->curvature_map_value = 0; // reset curvature map value to default (you can compute an
                 // actual curvature value here, e.g. Gaussian curvature)
                 v->is_boundary = false;
             }

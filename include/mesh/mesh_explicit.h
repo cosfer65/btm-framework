@@ -8,52 +8,78 @@
 #include "triangle.h"
 #include "aabb.h"
 #include "geometry.h"
-#include <cstdint>
-#include <vector>
+#include "fast_vec.h"
+#include "hash.h"
+
 #include <unordered_map>
-#include <algorithm>
-#include <set>
 #include <queue>
-#include <iterator>
-#include <stdexcept>
+#include <iostream>
+#include <string>
+#include <algorithm>
+
 
 namespace btm {
     template <typename T>
     struct VertexExplicit {
-        basepoint3<T> position;
+        btm::basepoint3<T> position;
+        btm::basevec3<T> normal; // Normal at the vertex
+        T voronoi_area; // Voronoi area associated with the vertex
+        T area_sum; // Sum of areas of incident faces for the vertex
+        T angle_sum; // Sum of corner angles at the vertex
+        bool is_boundary; // Flag indicating if the vertex is on the boundary
     };
 
+    template <typename T>
     struct FaceExplicit {
         std::uint32_t v0, v1, v2;
+        btm::basevec3<T> normal; // Normal of the face
+        btm::basepoint3<T> center; // Center of the face
+        T angles[3]; // corner angles at v0, v1, v2
+        T area; // Area of the face
+        bool visited = false;
+
         std::uint32_t v(int index) const {
             switch (index) {
-                case 0: return v0;
-                case 1: return v1;
-                case 2: return v2;
-                default: throw std::out_of_range("FaceExplicit::v index out of range");
+            case 0: return v0;
+            case 1: return v1;
+            case 2: return v2;
+            default: throw std::out_of_range("FaceExplicit::v index out of range");
             }
         }
 
-        //bool flipped = false;
-        bool visited = false;
+        T angle(int vertex_id) const {
+            if (vertex_id == v0) return angles[0];
+            if (vertex_id == v1) return angles[1];
+            if (vertex_id == v2) return angles[2];
+            throw std::out_of_range("FaceExplicit::angle vertex_id out of range");
+        }
+
         void flip() {
             std::swap(v1, v2);
+            std::swap(angles[1], angles[2]);
+            normal = -normal;
         }
     };
 
     struct VertexAdjacency {
-        std::vector<std::uint32_t> incident_faces;
-        std::vector<std::uint32_t> neighbor_vertices;
-    };
-
-    struct EdgeAdjacency {
-        std::vector<std::uint32_t> incident_faces;
+        btm::fast_vec<std::uint32_t> incident_faces;     // Faces that share this vertex
+        btm::fast_vec<std::uint32_t> neighbor_vertices;  // Vertices that are neighbors of this vertex
     };
 
     struct FaceAdjacency {
-        std::vector<std::uint32_t> neighbor_faces;
+        std::uint32_t neighbor_faces[3];  // Faces that share an edge with this face
+        int neighbor_faces_size = 0;      // Number of neighbor faces currently stored
+        void clear() {
+            neighbor_faces_size = 0;
+        }
+        void add_neighbor_face(std::uint32_t face_id) {
+            if (neighbor_faces_size < 3) {
+                neighbor_faces[neighbor_faces_size++] = face_id;
+            }
+        }
     };
 
+    // EdgeKey is used to uniquely identify an edge in the mesh, regardless of the order of its vertices
     struct EdgeKey {
         std::uint32_t v0, v1;
         EdgeKey(std::uint32_t _v0, std::uint32_t _v1) : v0(std::min(_v0, _v1)), v1(std::max(_v0, _v1)) {}
@@ -62,11 +88,6 @@ namespace btm {
         }
     };
 
-    template <class T>
-    inline void hash_combine(std::size_t& seed, const T& v) {
-        std::hash<T> hasher;
-        seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
 
     struct EdgeKeyHash {
         std::size_t operator()(const EdgeKey& e) const noexcept {
@@ -78,57 +99,209 @@ namespace btm {
     };
 
     struct EdgeExplicit {
-        EdgeKey desc;
+        EdgeKey desc;  // Description of the edge using EdgeKey
         EdgeExplicit(std::uint32_t v0 = 0, std::uint32_t v1 = 0) : desc(v0, v1) {}
-        std::vector<std::uint32_t> incident_faces;
+        // each edge can be incident to at most two faces in a triangle mesh, so we can store the incident face indices in a fixed-size array
+        int incident_faces[2] = { -1, -1 };       // Store up to two incident faces for a triangle edge
+        int incident_faces_size = 0;              // Number of incident faces currently stored
+        inline bool is_boundary() const {         // An edge is a boundary edge if it is incident to only one face
+            return incident_faces_size < 2;
+        }
+        inline void add_incident_face(std::uint32_t face_id) {
+            if (incident_faces_size < 2) {
+                incident_faces[incident_faces_size++] = face_id;
+            }
+        }
     };
 
-    template <typename T> struct MeshAttributes {
-        std::vector<basevec3<T>> vertex_normals;
-        std::vector<basevec3<T>> face_normals;
+    template <typename T>
+    struct VertexCurvature {
+        T k1;         // principal min
+        T k2;         // principal max;
 
-        // Curvature fields
-        std::vector<T> k1; // principal curvature 1
-        std::vector<T> k2; // principal curvature 2
+        T mean;       // Mean curvature H = (k_1 + k_2) / 2.
+        T gaussian;   // Gaussian curvature K = k_1 * k_2.
 
-        // Segmentation labels
-        std::vector<int> segment_id;
+        /// Principal directions corresponding to 'principal_curvatures'.
+        btm::dvec3 k1_dir;
+        btm::dvec3 k2_dir;
+
+        btm::dvec3 meanCurvatureDir; // this can be computed as the normalized sum of the
+        // principal curvature directions weighted by their
+        // respective curvatures, i.e., (k_1 * k_1_dir + k_2 *
+        // k_2_dir) / (k_1 + k_2), and it points in the
+        // direction of the surface normal if the mean
+        // curvature is positive (convex) and in the opposite
+        // direction if the mean curvature is negative
+        // (concave).
+
+        // cached derived quantities for convenience
+        /// Absolute value of the minimum principal curvature |k1|.
+        T abs_k1;
+        /// Absolute value of the maximum principal curvature |k2|.
+        T abs_k2;
+        /// Absolute value of mean curvature |H|.
+        T absMeanCurvature;
+        /// absolute value of Gaussian curvature.
+        T absGaussCurvature;
+
+        /// Sign of Gaussian curvature K (e.g., -1 for saddle, 0 for flat, 1 for
+        /// elliptic).
+        int signGauss;
+        /// Sign of mean curvature H (e.g., -1 for concave, 0 for minimal, 1 for
+        /// convex).
+        int signMean;
+
+        int curvature_map_value = -1; // for visualization purposes, e.g., 0 for negative curvature, 1 for flat, 2 for positive curvature
+
+        /// @brief Default-initialize all curvature values to zero and label to
+        /// unknown.
+        VertexCurvature()
+            : k1(0), k2(0), mean(0), gaussian(0), abs_k1(0),
+            abs_k2(0), absMeanCurvature(0), absGaussCurvature(0), signGauss(0),
+            signMean(0) {}
+        void reset() {
+            k1 = 0;
+            k2 = 0;
+            mean = 0;
+            gaussian = 0;
+            abs_k1 = 0;
+            abs_k2 = 0;
+            absMeanCurvature = 0;
+            absGaussCurvature = 0;
+            signGauss = 0;
+            signMean = 0;
+        }
     };
+
 
     template <typename T>
     class MeshExplicit {
     public:
-        std::vector<VertexExplicit<T>> vertices;
-        std::vector<FaceExplicit> faces;
-        std::vector<VertexAdjacency> adjacency;
-        std::vector<FaceAdjacency> face_adjacency;
+        btm::fast_vec<VertexExplicit<T>> vertices;
+        btm::fast_vec<VertexCurvature<T>> vertex_curvatures;
+        btm::fast_vec<FaceExplicit<T>> faces;
         std::unordered_map<EdgeKey, EdgeExplicit, EdgeKeyHash> edges;
-        MeshAttributes<T> attributes;
-        T m_average_edge_length = T(0);
+
+        btm::fast_vec<VertexAdjacency> vertex_adjacency;     // faces incident to each vertex and neighboring vertices
+        btm::fast_vec<FaceAdjacency> face_adjacency;  // faces adjacent to each face
+
+        T m_average_edge_length = T(0); // average edge length of the mesh, useful for scaling display elements like normals, curvature vectors, etc.
+        std::uint32_t max_edges_count = 0; // maximum number of edges in the mesh, useful for preallocating buffers for edge-based computations
 
     public:
         MeshExplicit() = default;
 
-        void computeVertexNormals() {
-            attributes.vertex_normals.assign(vertices.size(), basevec3<T>{}); // reset normals
+        size_t num_vertices() const { return vertices.size(); }
+        size_t num_faces() const { return faces.size(); }
+        size_t num_edges() const { return edges.size(); }
 
-            for (size_t i = 0; i < vertices.size(); ++i) {
-                basevec3<T> norm = basevec3<T>(0, 0, 0);
-                for (size_t j=0; j < adjacency[i].incident_faces.size(); ++j) {
-                    int i1, i2;
-                    opposite_vertices(faces[adjacency[i].incident_faces[j]], i, i1, i2);
-                    const basevec3<T>& v0 = vertices[i].position;
-                    const basevec3<T>& v1 = vertices[i1].position;
-                    const basevec3<T>& v2 = vertices[i2].position;
+        const btm::fast_vec<VertexExplicit<T>>& get_vertices() const { return vertices; }
+        const btm::fast_vec<FaceExplicit<T>>& get_faces() const { return faces; }
+        const btm::fast_vec<VertexCurvature<T>>& get_vertex_curvatures() const { return vertex_curvatures; }
 
-                    T a0 = fabs(corner_angle<T>(v0, v1, v2));
-                    norm += face_normal(adjacency[i].incident_faces[j])*a0;
+        void generate_edges() {
+            edges.clear();
+            std::uint32_t face_count = 0;
+            size_t num_faces = faces.size();
+            for (std::uint32_t f = 0; f < num_faces; ++f) {
+                FaceExplicit<T>& face = faces[f];
+                std::uint32_t vs[3] = { face.v0, face.v1, face.v2 };
+                for (int i = 0; i < 3; ++i) {
+                    std::uint32_t v0 = vs[i];
+                    std::uint32_t v1 = vs[(i + 1) % 3];
+                    EdgeKey desc(v0, v1);
+                    auto it = edges.find(desc);
+                    if (it == edges.end()) {
+                        edges[desc] = EdgeExplicit(v0, v1);
+                    }
+                    edges[desc].add_incident_face(f);
                 }
-                attributes.vertex_normals[i] = norm.normalize();
             }
         }
 
-        void opposite_vertices(const FaceExplicit& face, std::uint32_t vertex_index, int& i1, int& i2) const {
+        T compute_angle_sum(size_t vertex_index) {
+            T angle_sum = T(0);
+            VertexAdjacency& va = vertex_adjacency[vertex_index];
+            for (size_t j = 0; j < va.incident_faces.size(); ++j) {
+                FaceExplicit<T>& face = faces[va.incident_faces[j]];
+                angle_sum += face.angle(vertex_index);
+            }
+            return angle_sum;
+        }
+
+        // Compute vertex normals based on face normals and corner angles
+        // area_sums and angle_sums as well
+        void compute_vertex_attributes() {
+            // for all vertices
+            size_t num_vertices = vertices.size();
+            for (size_t i = 0; i < num_vertices; ++i) {
+                VertexExplicit<T>& vertex = vertices[i];
+                btm::basevec3<T> norm = btm::basevec3<T>(0, 0, 0);
+                T sum_area = T(0);
+                T sum_angle = T(0);
+                // for all incident faces of vertex i
+                VertexAdjacency& va = vertex_adjacency[i];
+                size_t incident_face_count = va.incident_faces.size();
+                for (size_t j = 0; j < incident_face_count; ++j) {
+                    FaceExplicit<T>& face = faces[va.incident_faces[j]];
+                    T a0 = face.angle(i);
+                    norm += face.normal;
+                    sum_area += face.area;
+                    sum_angle += a0;
+                }
+                // set the vertex attributes
+                // Normalize the normal vector
+                vertex.normal = norm.normalize();
+                vertex.area_sum = sum_area;
+                vertex.angle_sum = sum_angle;
+            }
+        }
+
+        void compute_voronoi_areas() {
+            // for all vertices
+            size_t num_vertices = vertices.size();
+            for (size_t i = 0; i < num_vertices; ++i) {
+                VertexExplicit<T>& vertex = vertices[i];
+                T area_mixed = T(0);
+                btm::basevec3<T>& P = vertex.position;
+                // for each incident face of vertex i, compute the Voronoi area contribution
+                VertexAdjacency& va = vertex_adjacency[i];
+                for (size_t j = 0; j < va.incident_faces.size(); ++j) {
+                    std::uint32_t face_id = va.incident_faces[j];
+                    FaceExplicit<T>& face = faces[face_id];
+                    int v1, v2;
+                    opposite_vertices(face, i, v1, v2);
+                    btm::basevec3<T> v1p = vertices[v1].position;
+                    btm::basevec3<T> v2p = vertices[v2].position;
+                    btm::basevec3<T> PR = v2p - P;
+                    btm::basevec3<T> PQ = v1p - P;
+                    btm::basevec3<T> QR = v2p - v1p;
+
+                    // Total area of this triangle (calculating it is faster than using the precomputed face area due to cache locality)
+                    T area_tri = T(0.5) * PQ.cross(PR).length();
+                    // Check if triangle is obtuse
+                    bool is_obtuse = PQ.dot(PR) < 0 || (-PQ).dot(QR) < 0 || (-PR).dot(-QR) < 0;
+                    if (!is_obtuse) {
+                        // Voronoi Area using cotangent weights
+                        T cot_alpha = PQ.dot(PR) / PQ.cross(PR).length();
+                        T cot_beta = (-PQ).dot(QR) / (-PQ).cross(QR).length();
+                        area_mixed += (cot_alpha * PR.length() * PR.length() +
+                            cot_beta * PQ.length() * PQ.length()) /
+                            T(8.0);
+                    }
+                    else {
+                        // Angle at Q or R is obtuse
+                        area_mixed += area_tri / T(4.0);
+                    }
+                }
+                // Store the computed Voronoi area in the vertex's voronoi area attribute
+                vertex.voronoi_area = area_mixed;
+            }
+        }
+
+        // Given a face and a vertex index, find the two other vertices of the face
+        void opposite_vertices(const FaceExplicit<T>& face, std::uint32_t vertex_index, int& i1, int& i2) const {
             if (face.v0 == vertex_index) {
                 i1 = face.v1;
                 i2 = face.v2;
@@ -150,10 +323,6 @@ namespace btm {
             return m_average_edge_length;
         }
 
-        basevec3<T> vertex_position(std::uint32_t index) const {
-            return vertices[index].position;
-        }
-
         EdgeExplicit* find_edge(const EdgeKey& key) {
             auto it = edges.find(key);
             if (it == edges.end()) {
@@ -162,59 +331,45 @@ namespace btm {
             }
             return &(it->second);
         }
-
-        basepoint3<T> face_center(int face_index) const {
-            const auto& face = faces[face_index];
-            return (vertices[face.v0].position + vertices[face.v1].position + vertices[face.v2].position) / T(3);
+        
+        inline EdgeExplicit* find_edge(std::uint32_t v0, std::uint32_t v1) {
+            EdgeKey key(v0, v1);
+            return find_edge(key);
         }
 
-        basevec3<T> face_normal(int face_index) const {
-            const auto& face = faces[face_index];
-            const auto& v0 = vertices[face.v0].position;
-            const auto& v1 = vertices[face.v1].position;
-            const auto& v2 = vertices[face.v2].position;
-            basevec3<T> edge1 = v1 - v0;
-            basevec3<T> edge2 = v2 - v0;
-            return edge1.cross(edge2).normalize();
-        }
-
-        void adjacent_faces(std::uint32_t face, std::vector<std::uint32_t>& out_faces) const {
-            EdgeKey e0(faces[face].v0, faces[face].v1);
-            EdgeKey e1(faces[face].v1, faces[face].v2);
-            EdgeKey e2(faces[face].v2, faces[face].v0);
-
-            std::set<std::uint32_t> adj_faces;
+        inline void adjacent_faces(std::uint32_t face, FaceAdjacency& out_faces) const {
+            FaceExplicit<T> const& f = faces[face];
+            EdgeKey e0(f.v0, f.v1);
+            EdgeKey e1(f.v1, f.v2);
+            EdgeKey e2(f.v2, f.v0);
 
             auto& fc1 = edges.find(e0)->second.incident_faces; // adjacent faces across edge e0
             auto& fc2 = edges.find(e1)->second.incident_faces; // adjacent faces across edge e1
             auto& fc3 = edges.find(e2)->second.incident_faces; // adjacent faces across edge e2
-            adj_faces.insert(fc1.begin(), fc1.end());
-            adj_faces.insert(fc2.begin(), fc2.end());
-            adj_faces.insert(fc3.begin(), fc3.end());
 
-            auto excludeCondition = [face](std::uint32_t value) {
-                return value != face; // keep only odd numbers
-                };
-
-            std::copy_if(adj_faces.begin(), adj_faces.end(),
-                std::back_inserter(out_faces),
-                excludeCondition);
+            out_faces.clear();
+            if (fc1[0] != face) out_faces.add_neighbor_face(fc1[0]);
+            else if (fc1[1] >= 0 && fc1[1] != face) out_faces.add_neighbor_face(fc1[1]);
+            if (fc2[0] != face) out_faces.add_neighbor_face(fc2[0]);
+            else if (fc2[1] >= 0 && fc2[1] != face) out_faces.add_neighbor_face(fc2[1]);
+            if (fc3[0] != face) out_faces.add_neighbor_face(fc3[0]);
+            else if (fc3[1] >= 0 && fc3[1] != face) out_faces.add_neighbor_face(fc3[1]);
         }
 
         void recalculateMesh() {
             T total_edge_length = T(0);
             for (const auto& edge_pair : edges) {
                 const EdgeExplicit& edge = edge_pair.second;
-                const basevec3<T>& v0 = vertices[edge.desc.v0].position;
-                const basevec3<T>& v1 = vertices[edge.desc.v1].position;
+                const btm::basevec3<T>& v0 = vertices[edge.desc.v0].position;
+                const btm::basevec3<T>& v1 = vertices[edge.desc.v1].position;
                 total_edge_length += (v1 - v0).length();
             }
             m_average_edge_length = total_edge_length / static_cast<T>(edges.size());
         }
 
-        AABB<T> getBoundingBox() {
+        btm::AABB<T> getBoundingBox() {
             if (vertices.size() == 0) {
-                return AABB<T>(); // empty bounding box
+                return btm::AABB<T>(); // empty bounding box
             }
             T min_x = std::numeric_limits<T>::max();
             T min_y = std::numeric_limits<T>::max();
@@ -224,7 +379,7 @@ namespace btm {
             T max_z = std::numeric_limits<T>::lowest();
 
             for (const auto& v_pair : vertices) {
-                const basevec3<T>& coords = v_pair.position;
+                const btm::basevec3<T>& coords = v_pair.position;
                 if (coords.x() < min_x)
                     min_x = coords.x();
                 if (coords.y() < min_y)
@@ -238,12 +393,13 @@ namespace btm {
                 if (coords.z() > max_z)
                     max_z = coords.z();
             }
-            AABB<T> bbox({ min_x, min_y, min_z }, { max_x, max_y, max_z });
+            btm::AABB<T> bbox({ min_x, min_y, min_z }, { max_x, max_y, max_z });
             return bbox;
         }
-        void translate(const basevec3<T>& offset) {
+
+        void translate(const btm::basevec3<T>& offset) {
             for (auto& v_pair : vertices) {
-                basevec3<T>& coords = v_pair.position;
+                btm::basevec3<T>& coords = v_pair.position;
                 coords = coords + offset;
             }
         }
@@ -252,52 +408,87 @@ namespace btm {
             for (auto& face : faces) {
                 face.flip();
             }
+            for (auto& vertex : vertices) {
+                vertex.normal = -vertex.normal;
+            }
         }
 
         void build_adjacency() {
-            adjacency.clear();
-            adjacency.resize(vertices.size());
+            vertex_adjacency.clear();
+            vertex_adjacency.resize(vertices.size());
 
             face_adjacency.clear();
             face_adjacency.resize(faces.size());
 
-            for (std::uint32_t f = 0; f < faces.size(); ++f) {
+            size_t num_faces = faces.size();
+            for (std::uint32_t f = 0; f < num_faces; ++f) {
                 const auto& face = faces[f];
                 std::uint32_t vs[3] = { face.v0, face.v1, face.v2 };
-
                 for (int i = 0; i < 3; ++i) {
                     auto v = vs[i];
                     auto vn = vs[(i + 1) % 3];
 
-                    adjacency[v].incident_faces.push_back(f);
-                    adjacency[v].neighbor_vertices.push_back(vn);
+                    VertexAdjacency& va1 = vertex_adjacency[v];
+                    VertexAdjacency& va2 = vertex_adjacency[vn];
+
+                    va1.incident_faces.push_back(f);
+                    va1.neighbor_vertices.push_back(vn);
+                    va2.incident_faces.push_back(f);
+                    va2.neighbor_vertices.push_back(v);
                 }
 
-                adjacent_faces(f, face_adjacency[f].neighbor_faces);
+                adjacent_faces(f, face_adjacency[f]);
             }
-            // Optional: remove duplicates from neighbor lists
-            // INSERT: deduplication logic if desired
+            // now remove duplicate neighbor vertices and faces for each vertex
+            for (auto& va : vertex_adjacency) {
+                std::sort(va.neighbor_vertices.begin(), va.neighbor_vertices.end());
+                va.neighbor_vertices.erase(std::unique(va.neighbor_vertices.begin(), va.neighbor_vertices.end()), va.neighbor_vertices.end());
+
+                std::sort(va.incident_faces.begin(), va.incident_faces.end());
+                va.incident_faces.erase(std::unique(va.incident_faces.begin(), va.incident_faces.end()), va.incident_faces.end());
+            }
         }
 
-        void build_attributes() {
-            attributes.face_normals.clear();
+        void calculate_corner_angles() {
             for (auto& face : faces) {
                 const auto& v0 = vertices[face.v0].position;
                 const auto& v1 = vertices[face.v1].position;
                 const auto& v2 = vertices[face.v2].position;
-                basevec3<T> edge1 = v1 - v0;
-                basevec3<T> edge2 = v2 - v0;
-                basevec3<T> face_normal = edge1.cross(edge2).normalize();
-                attributes.face_normals.push_back(face_normal);
+                face.angles[0] = corner_angle(v0, v1, v2);
+                face.angles[1] = corner_angle(v1, v2, v0);
+                face.angles[2] = corner_angle(v2, v0, v1);
             }
-            computeVertexNormals();
         }
 
-        void reserve(std::size_t vertex_count, std::size_t face_count) {
-            vertices.reserve(vertex_count);
-            faces.reserve(face_count);
-            adjacency.reserve(vertex_count);
-            face_adjacency.reserve(face_count);
+        void calculate_face_attributes() {
+            for (auto& face : faces) {
+                const auto& v0 = vertices[face.v0].position;
+                const auto& v1 = vertices[face.v1].position;
+                const auto& v2 = vertices[face.v2].position;
+                btm::basevec3<T> edge1 = v1 - v0;
+                btm::basevec3<T> edge2 = v2 - v0;
+                face.normal = edge1.cross(edge2).normalize();
+                face.center = (v0 + v1 + v2) / T(3);
+                face.area = edge1.cross(edge2).length() * T(0.5);
+            }
+        }
+
+        void calculate_edges_attributes() {
+            for (const auto& edge_pair : edges) {
+                const EdgeExplicit& edge = edge_pair.second;
+                if (edge.is_boundary()) {
+                    vertices[edge.desc.v0].is_boundary = true;
+                    vertices[edge.desc.v1].is_boundary = true;
+                }
+            }
+        }
+
+        void build_attributes() {
+            calculate_face_attributes();  // compute face normals, centers, and areas
+            calculate_edges_attributes(); // compute boundary flags for vertices based on edges
+            calculate_corner_angles();    // compute corner angles for each face
+            compute_vertex_attributes();  // compute vertex normals based on face normals and corner angles
+            compute_voronoi_areas();      // compute Voronoi areas for each vertex
         }
 
         // some functions to add vertices and faces are added here for
@@ -306,26 +497,14 @@ namespace btm {
         // when adding data to the mesh. For example, when adding a face, we
         // should ensure that the vertex indices are valid and that the adjacency
         // information is updated accordingly.
-        std::uint32_t add_vertex(size_t id, const basevec3<T>& position) {
+        std::uint32_t add_vertex(size_t id, const btm::basevec3<T>& position) {
             vertices.push_back({ position });
-            return vertices.size() -
-                1; // return the index of the newly added vertex
+            return vertices.size() - 1; // return the index of the newly added vertex
         }
 
-        std::uint32_t add_face(const FaceExplicit& face) {
+        std::uint32_t add_face(const FaceExplicit<T>& face) {
             faces.push_back(face);
-            // Update edges
-            std::uint32_t vs[3] = { face.v0, face.v1, face.v2 };
-            for (int i = 0; i < 3; ++i) {
-                std::uint32_t v0 = vs[i];
-                std::uint32_t v1 = vs[(i + 1) % 3];
-                EdgeKey desc(v0, v1);
-                auto it = edges.find(desc);
-                if (it == edges.end()) {
-                    edges[desc] = EdgeExplicit(v0, v1);
-                }
-                edges[desc].incident_faces.push_back(faces.size() - 1);
-            }
+            max_edges_count += 3; // each face adds 3 edges, an estimate for now
             return faces.size() - 1; // return the index of the newly added face
         }
 
@@ -335,14 +514,14 @@ namespace btm {
 
         std::uint32_t add_face(std::uint32_t v0, std::uint32_t v1, std::uint32_t v2, std::uint32_t v3, std::uint32_t base) {
             // For quads, we can split them into two triangles (v0, v1, v2) and (v0, v2, v3)
-            std::uint32_t f1 = add_face({ v0-base, v1-base, v2-base });
-            std::uint32_t f2 = add_face({ v0-base, v2-base, v3-base });
+            std::uint32_t f1 = add_face({ v0 - base, v1 - base, v2 - base });
+            std::uint32_t f2 = add_face({ v0 - base, v2 - base, v3 - base });
             return f1; // return the index of the first triangle face
         }
 
-        std::uint32_t face_count() const { return faces.size(); }
+        //std::uint32_t face_count() const { return faces.size(); }
 
-        const FaceExplicit& get_face(std::uint32_t index) const {
+        const FaceExplicit<T>& get_face(std::uint32_t index) const {
             return faces[index];
         }
 
@@ -370,7 +549,7 @@ namespace btm {
             while (!Q.empty()) {
                 int f = Q.front(); Q.pop();
 
-                FaceExplicit& face = faces[f];
+                FaceExplicit<T>& face = faces[f];
                 int nvF = 3; // Since it's a triangle
 
                 for (int e = 0; e < nvF; e++) {
@@ -383,7 +562,8 @@ namespace btm {
 
                     for (auto& face_id : edge->incident_faces) {
                         if (face_id == f) continue; // skip the current face
-                        FaceExplicit& adj_face = faces[face_id];
+                        if (face_id == (std::uint32_t) - 1) continue; // invalid face index, skip
+                        FaceExplicit<T>& adj_face = faces[face_id];
                         if (adj_face.visited) continue; // already visited
                         int nvG = 3; // Since it's a triangle
 
@@ -408,31 +588,25 @@ namespace btm {
                 }
             }
         }
+        T component_signed_volume() {
+            T vol = 0.0;
+            for (FaceExplicit<T>& face : faces) {
+                int nv = 3; // triangles only
 
+                auto tri_vol = [&](int i0, int i1, int i2) {
+                    btm::basevec3<T> a = vertices[i0].position;
+                    btm::basevec3<T> b = vertices[i1].position;
+                    btm::basevec3<T> c = vertices[i2].position;
 
-    };
+                    return btm::signedVolume(btm::Triangle<T>{a, b, c});
+                    };
 
-    template <typename T>
-    T component_signed_volume(btm::MeshExplicit<T>& mesh) {
-        T vol = 0.0;
-        for (FaceExplicit& face : mesh.faces) {
-            int nv = 3; // triangles only
+                vol += tri_vol(face.v0, face.v1, face.v2);
+            }
 
-            auto tri_vol = [&](int i0, int i1, int i2) {
-                btm::basevec3<T> a = mesh.vertex_position(i0);
-                btm::basevec3<T> b = mesh.vertex_position(i1);
-                btm::basevec3<T> c = mesh.vertex_position(i2);
-
-                return btm::signedVolume(btm::Triangle<T>{a, b, c});
-                };
-
-            vol += tri_vol(face.v0, face.v1, face.v2);
+            return vol;
         }
-
-        return vol;
-    }
-
-
+    };
 } // namespace btm
 
 #endif // __mesh_explicit_h__

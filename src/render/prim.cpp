@@ -23,7 +23,6 @@ namespace btm {
 
         int idx = 0;
 
-
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
 
@@ -56,7 +55,6 @@ namespace btm {
             use_vertex_color = 1;
         }
 
-
         GLuint index_buffer;
         glGenBuffers(1, &index_buffer);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
@@ -72,24 +70,24 @@ namespace btm {
      * @param dr_el Whether to use element drawing (default: true).
      * @return Pointer to the created gl_prim.
      */
-    // gl_prim* create_prim(half_edge_mesh<double>* ms, GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-    //     if (!ms) return nullptr;
-    //     mesh_data mdata;
-    //     collect_mesh_data<double>(ms, mdata);
-    //     gl_prim* prim = new gl_prim;
-    //     prim->create_from_mesh(&mdata, drmode);
-    //     prim->set_draw_mode(drmode);
-    //     return prim;
-    // }
+     // gl_prim* create_prim(half_edge_mesh<double>* ms, GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
+     //     if (!ms) return nullptr;
+     //     mesh_data mdata;
+     //     collect_mesh_data<double>(ms, mdata);
+     //     gl_prim* prim = new gl_prim;
+     //     prim->create_from_mesh(&mdata, drmode);
+     //     prim->set_draw_mode(drmode);
+     //     return prim;
+     // }
 
-    /**
-     * @brief Creates a gl_prim from a gl_mesh.
-     * Converts the gl_mesh to mesh_data and initializes a gl_prim object.
-     * @param ms Pointer to gl_mesh.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
+     /**
+      * @brief Creates a gl_prim from a gl_mesh.
+      * Converts the gl_mesh to mesh_data and initializes a gl_prim object.
+      * @param ms Pointer to gl_mesh.
+      * @param drmode OpenGL draw mode (default: GL_LINE).
+      * @param dr_el Whether to use element drawing (default: true).
+      * @return Pointer to the created gl_prim.
+      */
     gl_prim* create_prim(gl_mesh* ms, GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
         if (!ms) return nullptr;
         mesh_data mdata;
@@ -241,7 +239,7 @@ namespace btm {
         std::unique_ptr<half_edge_mesh<double>> ms(create_unit_torus<double, double>());
         gl_prim* p = create_prim(ms.get(), drmode, dr_el);
         return p;
-    }  
+    }
 #endif
 
     /**
@@ -255,13 +253,11 @@ namespace btm {
         /**
          * @brief Default constructor for gl_ucs.
          */
-        gl_ucs() {
-        }
+        gl_ucs() {}
         /**
          * @brief Destructor for gl_ucs.
          */
-        virtual ~gl_ucs() {
-        }
+        virtual ~gl_ucs() {}
         /**
          * @brief Renders the UCS axes using the provided shader.
          * Draws three colored axes (X: red, Y: green, Z: blue) using GL_LINES.

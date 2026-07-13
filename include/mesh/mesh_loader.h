@@ -19,8 +19,10 @@ namespace btm {
         int vcount_start = 0; // to handle multiple "o" sections in the OBJ file, we need to keep track of the starting vertex index for each section
 
         if (mdl_file.is_open()) {
+            std::vector<std::string> tokens;
             while (std::getline(mdl_file, line)) {
-                auto tokens = splitString(line);
+                tokens.clear();
+                splitString(line.c_str(), tokens);
                 if (tokens.empty()) {
                     continue; // skip empty lines
                 }
@@ -57,9 +59,10 @@ namespace btm {
                 }
                 else if (tokens[0] == "f") {
                     // add face
-                    auto v1 = splitString(tokens[1], '/');
-                    auto v2 = splitString(tokens[2], '/');
-                    auto v3 = splitString(tokens[3], '/');
+                    std::vector<std::string> v1, v2, v3;
+                    splitString(tokens[1].c_str(), v1, '/');
+                    splitString(tokens[2].c_str(), v2, '/');
+                    splitString(tokens[3].c_str(), v3, '/');
                     size_t idx1 = static_cast<size_t>(std::stoull(v1[0]));
                     size_t idx2 = static_cast<size_t>(std::stoull(v2[0]));
                     size_t idx3 = static_cast<size_t>(std::stoull(v3[0]));
@@ -73,7 +76,8 @@ namespace btm {
                     }
                     if (tokens.size() > 4) {
                         // More than 3 vertices per face
-                        auto v4 = splitString(tokens[4], '/');
+                        std::vector<std::string> v4;
+                        splitString(tokens[4].c_str(), v4, '/');
                         size_t idx4 = static_cast<size_t>(std::stoull(v4[0]));
                         if (idx4 == 0 || idx4 >= vertex_count) {
                             // Index out of bounds; skip this face
