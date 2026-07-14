@@ -59,6 +59,9 @@ namespace btm {
             std::swap(angles[1], angles[2]);
             normal = -normal;
         }
+        void translate(const btm::basevec3<T>& translation) {
+            center += translation;
+        }
     };
 
     struct VertexAdjacency {
@@ -398,9 +401,12 @@ namespace btm {
         }
 
         void translate(const btm::basevec3<T>& offset) {
-            for (auto& v_pair : vertices) {
-                btm::basevec3<T>& coords = v_pair.position;
+            for (auto& vert : vertices) {
+                btm::basevec3<T>& coords = vert.position;
                 coords = coords + offset;
+            }
+            for (auto& face : faces) {
+                face.translate(offset);
             }
         }
 
