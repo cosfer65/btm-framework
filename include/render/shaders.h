@@ -94,9 +94,21 @@ namespace btm {
          */
         ~gl_shader()
         {
-            if (program)
-                glDeleteProgram(program);
+            destroy();
         }
+
+        // @brief Create the shader program object.
+        // @return true always, since no GL resources are allocated until `load()` is called.
+        bool create() {
+            return true;
+        }
+        void destroy() {
+            if (program) {
+                glDeleteProgram(program);
+                program = 0;
+            }
+        }
+
 
         /**
          * @brief Add a shader file to the internal list.

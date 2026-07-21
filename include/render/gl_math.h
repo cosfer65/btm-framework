@@ -3,10 +3,14 @@
 
 #include "vector.h"
 namespace btm {
+    struct glvec3 {
+        float x, y, z;
+    };
+
     //////////////////////////////////////////////////////////////////////////
     /**
      * @brief Constructs a view matrix for a camera in 3D space.
-     * 
+     *
      * The resulting matrix is column-major, as expected by OpenGL.
      * @param eyePosition3D The position of the camera (eye) in world coordinates.
      * @param center3D The point in world space the camera is looking at.
@@ -17,7 +21,7 @@ namespace btm {
 
     /**
      * @brief Creates a frustum (perspective) projection matrix.
-     * 
+     *
      * The matrix is stored in column-major order.
      * @param matrix Pointer to a 16-element array to receive the matrix.
      * @param left Left vertical clipping plane.
@@ -31,7 +35,7 @@ namespace btm {
 
     /**
      * @brief Creates a perspective projection matrix using field of view.
-     * 
+     *
      * The matrix is stored in column-major order.
      * @param matrix Pointer to a 16-element array to receive the matrix.
      * @param fovyInRadians Field of view angle in the y direction, in radians.
@@ -43,7 +47,7 @@ namespace btm {
 
     /**
      * @brief Constructs and returns a perspective projection matrix.
-     * 
+     *
      * @param fovyInRadians Field of view angle in the y direction, in radians.
      * @param aspectRatio Aspect ratio that determines the field of view in the x direction.
      * @param znear Distance to the near depth clipping plane (must be positive).
@@ -54,7 +58,7 @@ namespace btm {
 
     /**
      * @brief Creates an orthographic projection matrix.
-     * 
+     *
      * The matrix is stored in column-major order.
      * @param matrix Pointer to a 16-element array to receive the matrix.
      * @param l Left vertical clipping plane.
@@ -68,7 +72,7 @@ namespace btm {
 
     /**
      * @brief Constructs and returns an orthographic projection matrix.
-     * 
+     *
      * @param l Left vertical clipping plane.
      * @param r Right vertical clipping plane.
      * @param b Bottom horizontal clipping plane.

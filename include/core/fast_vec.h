@@ -68,6 +68,12 @@ namespace btm {
             }
             current = new_size;
         }
+        inline void reserve(size_t new_capacity) {
+            if (new_capacity > d_size) {
+                grow(new_capacity);
+            }
+            current = 0; // Reset current to 0 after reserving new capacity
+        }
         inline fast_vec& operator=(const fast_vec& other) {
             if (this != &other) {
                 if (d_size < other.d_size) {

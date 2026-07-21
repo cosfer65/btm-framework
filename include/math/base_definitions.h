@@ -133,6 +133,12 @@ namespace btm {
     inline T clamp(T x, T a, T b) {
         return std::max(a, std::min(b, x));
     }
+
+    template <typename T>
+    inline T random_nummer(T min, T max) {
+        T random = static_cast<T>(std::rand()) / static_cast<T>(RAND_MAX);
+        return min + random * (max - min);
+    }
 }
 
 #endif // __base_definitions_h__
