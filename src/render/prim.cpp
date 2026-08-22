@@ -60,6 +60,11 @@ namespace btm {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_mesh_data.num_indices * sizeof(unsigned int), &m_mesh_data.indices[0], GL_STATIC_DRAW);
         glBindVertexArray(0);
+
+        num_indices = m_mesh_data.num_indices;  ///< Number of indices in the mesh (required for glDrawElements).
+        num_vertices = m_mesh_data.num_vertices; ///< Number of vertices in the mesh (required for glDrawArrays).
+        num_normals = m_mesh_data.num_normals;  ///< Number of normals in the mesh.
+
     }
 
     /**
