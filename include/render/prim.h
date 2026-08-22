@@ -17,6 +17,9 @@ namespace btm {
     protected:
         mesh_data m_mesh_data;   ///< Mesh data for the primitive.
         GLuint vao;              ///< Vertex Array Object handle.
+        size_t num_indices = 0;  ///< Number of indices in the mesh (required for glDrawElements).
+        size_t num_vertices = 0; ///< Number of vertices in the mesh (required for glDrawArrays).
+        size_t num_normals = 0;  ///< Number of normals in the mesh.
 
         /**
          * @brief Specifies how polygons will be rasterized.
@@ -92,7 +95,7 @@ namespace btm {
          * @brief Virtual destructor.
          */
         virtual ~gl_prim() {
-            clear_vao();
+            clear();
         }
 
         void clear_vao() {
@@ -100,6 +103,9 @@ namespace btm {
                 glDeleteVertexArrays(1, &vao);
                 vao = 0;
             }
+            num_vertices = 0;
+            num_normals = 0;
+            num_indices = 0;
         }
 
         void clear_mesh_data() {
@@ -109,6 +115,10 @@ namespace btm {
             m_mesh_data.num_vertices = 0;
             m_mesh_data.num_normals = 0;
             m_mesh_data.num_indices = 0;
+        }
+        void clear() {
+            clear_vao();
+            clear_mesh_data();
         }
 
         /**
@@ -185,14 +195,14 @@ namespace btm {
                     glFrontFace(GL_CCW);
                     glPolygonMode(GL_FRONT_AND_BACK, draw_mode);
                 }
-                glDrawElements(draw_type, (unsigned int)m_mesh_data.num_indices, GL_UNSIGNED_INT, 0);
+                glDrawElements(draw_type, (unsigned int)num_indices, GL_UNSIGNED_INT, 0);
             }
             else
             {
                 // setup drawing
                 glPatchParameteri(GL_PATCH_VERTICES, 4);
                 glPolygonMode(GL_FRONT_AND_BACK, draw_mode);
-                glDrawArrays(GL_PATCHES, 0, (unsigned int)m_mesh_data.num_indices);
+                glDrawArrays(GL_PATCHES, 0, (unsigned int)num_indices);
             }
             glBindVertexArray(0);
         }

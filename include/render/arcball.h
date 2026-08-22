@@ -16,6 +16,10 @@ namespace btm {
     /// - query the current rotation via `rotation`.
     class arcball {
     public:
+        arcball() {
+            W = 800.0f; H = 600.0f; dragging = false;
+            m_rotation = quaternion<float>(1, 0, 0, 0);
+        }
         /// \brief Construct an arcball controller for a given viewport size.
         ///
         /// \param width  Current viewport width in pixels.

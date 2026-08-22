@@ -7,7 +7,7 @@ namespace btm {
     // it does not support shrinking, only growing when capacity is reached
     // it is not as full featured as std::vector, but it is faster for our use case
     template <typename T>
-    class fast_vec {
+    class btm_vector {
         T* data;
         std::size_t d_size;
         std::size_t current;
@@ -24,20 +24,20 @@ namespace btm {
             d_size = new_size;
         }
     public:
-        fast_vec(std::size_t max_size = 16) : d_size(max_size), current(0) {
+        btm_vector(std::size_t max_size = 16) : d_size(max_size), current(0) {
             data = new T[d_size];
         }
-        fast_vec(const fast_vec& other) {
+        btm_vector(const btm_vector& other) {
             d_size = other.d_size;
             data = new T[d_size];
             current = other.current;
             std::copy(other.data, other.data + current, data);
         }
-        fast_vec(std::initializer_list<T> init) : d_size(init.size()), current(init.size()) {
+        btm_vector(std::initializer_list<T> init) : d_size(init.size()), current(init.size()) {
             data = new T[d_size];
             std::copy(init.begin(), init.end(), data);
         }
-        ~fast_vec() {
+        ~btm_vector() {
             delete[] data;
         }
         inline void push_back(const T& value) {
@@ -57,6 +57,9 @@ namespace btm {
         inline size_t size() const {
             return current;
         }
+        inline bool empty() const {
+            return current == 0;
+        }
         inline void clear() {
             current = 0;
         }
@@ -74,7 +77,7 @@ namespace btm {
             }
             current = 0; // Reset current to 0 after reserving new capacity
         }
-        inline fast_vec& operator=(const fast_vec& other) {
+        inline btm_vector& operator=(const btm_vector& other) {
             if (this != &other) {
                 if (d_size < other.d_size) {
                     delete[] data;
@@ -89,7 +92,13 @@ namespace btm {
         inline T* begin() {
             return data;
         }
+        inline const T* begin() const {
+            return data;
+        }
         inline T* end() {
+            return data + current;
+        }
+        inline const T* end() const {
             return data + current;
         }
         inline T* erase(T* pos_start, T* pos_end) {

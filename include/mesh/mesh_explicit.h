@@ -8,7 +8,7 @@
 #include "triangle.h"
 #include "aabb.h"
 #include "geometry.h"
-#include "fast_vec.h"
+#include "btm_vector.h"
 #include "hash.h"
 
 #include <unordered_map>
@@ -16,7 +16,6 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
-
 
 namespace btm {
     template <typename T>
@@ -65,8 +64,8 @@ namespace btm {
     };
 
     struct VertexAdjacency {
-        btm::fast_vec<std::uint32_t> incident_faces;     // Faces that share this vertex
-        btm::fast_vec<std::uint32_t> neighbor_vertices;  // Vertices that are neighbors of this vertex
+        btm::btm_vector<std::uint32_t> incident_faces;     // Faces that share this vertex
+        btm::btm_vector<std::uint32_t> neighbor_vertices;  // Vertices that are neighbors of this vertex
     };
 
     struct FaceAdjacency {
@@ -82,31 +81,31 @@ namespace btm {
         }
     };
 
-    // EdgeKey is used to uniquely identify an edge in the mesh, regardless of the order of its vertices
-    struct EdgeKey {
-        std::uint32_t v0, v1;
-        EdgeKey(std::uint32_t _v0, std::uint32_t _v1) : v0(std::min(_v0, _v1)), v1(std::max(_v0, _v1)) {}
-        bool operator==(const EdgeKey& other) const noexcept {
-            return v0 == other.v0 && v1 == other.v1;
-        }
-    };
-
-
-    struct EdgeKeyHash {
-        std::size_t operator()(const EdgeKey& e) const noexcept {
-            std::size_t seed = 0;
-            hash_combine(seed, e.v0);
-            hash_combine(seed, e.v1);
-            return seed;
-        }
-    };
+    using edge_key = std::uint64_t;
 
     struct EdgeExplicit {
-        EdgeKey desc;  // Description of the edge using EdgeKey
-        EdgeExplicit(std::uint32_t v0 = 0, std::uint32_t v1 = 0) : desc(v0, v1) {}
+        static edge_key make_edge_key(std::uint32_t v0, std::uint32_t v1) {
+            if (v0 > v1) std::swap(v0, v1);
+            return (static_cast<edge_key>(v0) << 32) | static_cast<edge_key>(v1);
+        }
+        edge_key key;  // Unique key for the edge
+        EdgeExplicit(std::uint32_t v0 = 0, std::uint32_t v1 = 0) : key(EdgeExplicit::make_edge_key(v0, v1)) {}
+        std::uint32_t v0() const {
+            return key >> 32; // desc.v0;
+        }
+        std::uint32_t v1() const {
+            return key & 0xFFFFFFFF; // desc.v1;
+        }
+
         // each edge can be incident to at most two faces in a triangle mesh, so we can store the incident face indices in a fixed-size array
         int incident_faces[2] = { -1, -1 };       // Store up to two incident faces for a triangle edge
         int incident_faces_size = 0;              // Number of incident faces currently stored
+        int f0() const {
+            return incident_faces[0];
+        }
+        int f1() const {
+            return incident_faces[1];
+        }
         inline bool is_boundary() const {         // An edge is a boundary edge if it is incident to only one face
             return incident_faces_size < 2;
         }
@@ -126,10 +125,10 @@ namespace btm {
         T gaussian;   // Gaussian curvature K = k_1 * k_2.
 
         /// Principal directions corresponding to 'principal_curvatures'.
-        btm::dvec3 k1_dir;
-        btm::dvec3 k2_dir;
+        btm::basevec3<T> k1_dir;
+        btm::basevec3<T> k2_dir;
 
-        btm::dvec3 meanCurvatureDir; // this can be computed as the normalized sum of the
+        btm::basevec3<T> meanCurvatureDir; // this can be computed as the normalized sum of the
         // principal curvature directions weighted by their
         // respective curvatures, i.e., (k_1 * k_1_dir + k_2 *
         // k_2_dir) / (k_1 + k_2), and it points in the
@@ -177,17 +176,19 @@ namespace btm {
         }
     };
 
+    template <typename T> using CurvatureField = btm::btm_vector<VertexCurvature<T>>;
 
     template <typename T>
     class MeshExplicit {
     public:
-        btm::fast_vec<VertexExplicit<T>> vertices;
-        btm::fast_vec<VertexCurvature<T>> vertex_curvatures;
-        btm::fast_vec<FaceExplicit<T>> faces;
-        std::unordered_map<EdgeKey, EdgeExplicit, EdgeKeyHash> edges;
+        btm::btm_vector<VertexExplicit<T>> vertices;
+        CurvatureField<T> vertex_curvatures;
+        btm::btm_vector<FaceExplicit<T>> faces;
+        std::unordered_map<edge_key, EdgeExplicit> edges;
+        std::vector<EdgeExplicit*> edges_vec;
 
-        btm::fast_vec<VertexAdjacency> vertex_adjacency;     // faces incident to each vertex and neighboring vertices
-        btm::fast_vec<FaceAdjacency> face_adjacency;  // faces adjacent to each face
+        btm::btm_vector<VertexAdjacency> vertex_adjacency;     // faces incident to each vertex and neighboring vertices
+        btm::btm_vector<FaceAdjacency> face_adjacency;  // faces adjacent to each face
 
         T m_average_edge_length = T(0); // average edge length of the mesh, useful for scaling display elements like normals, curvature vectors, etc.
         std::uint32_t max_edges_count = 0; // maximum number of edges in the mesh, useful for preallocating buffers for edge-based computations
@@ -199,9 +200,19 @@ namespace btm {
         size_t num_faces() const { return faces.size(); }
         size_t num_edges() const { return edges.size(); }
 
-        const btm::fast_vec<VertexExplicit<T>>& get_vertices() const { return vertices; }
-        const btm::fast_vec<FaceExplicit<T>>& get_faces() const { return faces; }
-        const btm::fast_vec<VertexCurvature<T>>& get_vertex_curvatures() const { return vertex_curvatures; }
+        const btm::btm_vector<VertexExplicit<T>>& get_vertices() const { return vertices; }
+        const btm::btm_vector<FaceExplicit<T>>& get_faces() const { return faces; }
+        const btm::btm_vector<VertexCurvature<T>>& get_vertex_curvatures() const { return vertex_curvatures; }
+        const std::unordered_map<edge_key, EdgeExplicit>& get_edges() const { return edges; }
+        btm::basepoint3<T> get_vertex_position(std::uint32_t vertex_index) const { return vertices[vertex_index].position; }
+
+        bool collect_edges(std::vector<EdgeExplicit*>& ev) {
+            ev.clear();
+            for (auto e : edges) {
+                ev.push_back(&e.second);
+            }
+            return true;
+        }
 
         void generate_edges() {
             edges.clear();
@@ -213,7 +224,7 @@ namespace btm {
                 for (int i = 0; i < 3; ++i) {
                     std::uint32_t v0 = vs[i];
                     std::uint32_t v1 = vs[(i + 1) % 3];
-                    EdgeKey desc(v0, v1);
+                    edge_key desc = EdgeExplicit::make_edge_key(v0, v1);
                     auto it = edges.find(desc);
                     if (it == edges.end()) {
                         edges[desc] = EdgeExplicit(v0, v1);
@@ -221,6 +232,7 @@ namespace btm {
                     edges[desc].add_incident_face(f);
                 }
             }
+            collect_edges(edges_vec);
         }
 
         T compute_angle_sum(size_t vertex_index) {
@@ -326,7 +338,7 @@ namespace btm {
             return m_average_edge_length;
         }
 
-        EdgeExplicit* find_edge(const EdgeKey& key) {
+        EdgeExplicit* find_edge(const edge_key& key) {
             auto it = edges.find(key);
             if (it == edges.end()) {
                 // If the edge does not exist, create it
@@ -334,17 +346,17 @@ namespace btm {
             }
             return &(it->second);
         }
-        
+
         inline EdgeExplicit* find_edge(std::uint32_t v0, std::uint32_t v1) {
-            EdgeKey key(v0, v1);
+            edge_key key = EdgeExplicit::make_edge_key(v0, v1);
             return find_edge(key);
         }
 
         inline void adjacent_faces(std::uint32_t face, FaceAdjacency& out_faces) const {
             FaceExplicit<T> const& f = faces[face];
-            EdgeKey e0(f.v0, f.v1);
-            EdgeKey e1(f.v1, f.v2);
-            EdgeKey e2(f.v2, f.v0);
+            edge_key e0 = EdgeExplicit::make_edge_key(f.v0, f.v1);
+            edge_key e1 = EdgeExplicit::make_edge_key(f.v1, f.v2);
+            edge_key e2 = EdgeExplicit::make_edge_key(f.v2, f.v0);
 
             auto& fc1 = edges.find(e0)->second.incident_faces; // adjacent faces across edge e0
             auto& fc2 = edges.find(e1)->second.incident_faces; // adjacent faces across edge e1
@@ -358,13 +370,15 @@ namespace btm {
             if (fc3[0] != face) out_faces.add_neighbor_face(fc3[0]);
             else if (fc3[1] >= 0 && fc3[1] != face) out_faces.add_neighbor_face(fc3[1]);
         }
-
+        // error C2662 : 'uint32_t btm::EdgeExplicit::v1(void)' : cannot convert 'this' pointer from 'const btm::EdgeExplicit' to 'btm::EdgeExplicit &'
         void recalculateMesh() {
             T total_edge_length = T(0);
             for (const auto& edge_pair : edges) {
                 const EdgeExplicit& edge = edge_pair.second;
-                const btm::basevec3<T>& v0 = vertices[edge.desc.v0].position;
-                const btm::basevec3<T>& v1 = vertices[edge.desc.v1].position;
+                int vv0 = edge.v0();
+                int vv1 = edge.v1();
+                const btm::basevec3<T>& v0 = vertices[vv0].position;
+                const btm::basevec3<T>& v1 = vertices[vv1].position;
                 total_edge_length += (v1 - v0).length();
             }
             m_average_edge_length = total_edge_length / static_cast<T>(edges.size());
@@ -483,8 +497,8 @@ namespace btm {
             for (const auto& edge_pair : edges) {
                 const EdgeExplicit& edge = edge_pair.second;
                 if (edge.is_boundary()) {
-                    vertices[edge.desc.v0].is_boundary = true;
-                    vertices[edge.desc.v1].is_boundary = true;
+                    vertices[edge.v0()].is_boundary = true;
+                    vertices[edge.v1()].is_boundary = true;
                 }
             }
         }
@@ -562,13 +576,13 @@ namespace btm {
                     int a = face.v(e);
                     int b = face.v((e + 1) % nvF);
 
-                    EdgeKey key(a, b);
+                    edge_key key = EdgeExplicit::make_edge_key(a, b);
                     auto* edge = find_edge(key);
                     if (!edge) continue; // edge not found, skip
 
                     for (auto& face_id : edge->incident_faces) {
                         if (face_id == f) continue; // skip the current face
-                        if (face_id == (std::uint32_t) - 1) continue; // invalid face index, skip
+                        if (face_id == (std::uint32_t)-1) continue; // invalid face index, skip
                         FaceExplicit<T>& adj_face = faces[face_id];
                         if (adj_face.visited) continue; // already visited
                         int nvG = 3; // Since it's a triangle

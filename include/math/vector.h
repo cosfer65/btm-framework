@@ -352,6 +352,14 @@ namespace btm {
         return v - project(v, from);
     }
 
+    template <size_t N>
+    basevector<float, N> dvec_to_fvec(const basevector<double, N>& v) {
+        basevector<float, N> result;
+        for (size_t i = 0; i < N; ++i) {
+            result(i) = static_cast<float>(v(i));
+        }
+        return result;
+    }
 
 
     //////////////////////////////////////////////////////////////////////////
