@@ -73,6 +73,21 @@ namespace btm {
         return angle1;
     }
 
+    template <typename T>
+    T dihedralAngle(const basevec3<T>& n1, const basevec3<T>& n2)
+    {
+        T d = n1.dot(n2);
+        T n = n1.length() * n2.length();
+
+        // Protect against floating‑point drift
+        T c = std::max(T(-1), std::min(T(1), d / n));
+
+        T theta = std::acos(c);          // angle between normals
+        T dihedral = std::min(theta, T(PI<T>) - theta); // acute dihedral angle
+
+        return dihedral;
+    }
+
     /**
      * @brief Computes the cotangent of the angle at point a formed by points b and
      * c.

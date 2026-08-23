@@ -11,6 +11,7 @@
 #include "btm_vector.h"
 #include "hash.h"
 
+#include <map>
 #include <unordered_map>
 #include <queue>
 #include <iostream>
@@ -110,9 +111,17 @@ namespace btm {
             return incident_faces_size < 2;
         }
         inline void add_incident_face(std::uint32_t face_id) {
-            if (incident_faces_size < 2) {
+            if (face_id < 0) return; // invalid face id
+            if (incident_faces_size == 0) {
                 incident_faces[incident_faces_size++] = face_id;
+            } else if (incident_faces_size == 1) {
+                if (incident_faces[0] != face_id)
+                    incident_faces[incident_faces_size++] = face_id;
             }
+
+            /*if (incident_faces_size < 2) {
+                incident_faces[incident_faces_size++] = face_id;
+            }*/
         }
     };
 
@@ -184,14 +193,21 @@ namespace btm {
         btm::btm_vector<VertexExplicit<T>> vertices;
         CurvatureField<T> vertex_curvatures;
         btm::btm_vector<FaceExplicit<T>> faces;
-        std::unordered_map<edge_key, EdgeExplicit> edges;
-        std::vector<EdgeExplicit*> edges_vec;
+        // edges are stored in a map for efficient lookup by edge key
+        // the edge key is a 64-bit integer that encodes the two vertex indices of the edge
+        // ensuring we have a unique representation for each edge, regardless of the order of the vertices
+        std::map<edge_key, EdgeExplicit> edges;
+        // accessing the edges sequentially is not efficient with a map, 
+        // so we maintain a separate vector of edge keys for sequential access
+        // this will also help us create a unified access pattern for edges, similar to vertices and faces
+        // as well as serve as common interface for different types of meshes, e.g., explicit, half-edge, etc.
+        std::vector<edge_key> edges_keys;
 
+        // adjacency information for efficient traversal and neighborhood queries
         btm::btm_vector<VertexAdjacency> vertex_adjacency;     // faces incident to each vertex and neighboring vertices
         btm::btm_vector<FaceAdjacency> face_adjacency;  // faces adjacent to each face
 
         T m_average_edge_length = T(0); // average edge length of the mesh, useful for scaling display elements like normals, curvature vectors, etc.
-        std::uint32_t max_edges_count = 0; // maximum number of edges in the mesh, useful for preallocating buffers for edge-based computations
 
     public:
         MeshExplicit() = default;
@@ -206,16 +222,24 @@ namespace btm {
         const std::unordered_map<edge_key, EdgeExplicit>& get_edges() const { return edges; }
         btm::basepoint3<T> get_vertex_position(std::uint32_t vertex_index) const { return vertices[vertex_index].position; }
 
-        bool collect_edges(std::vector<EdgeExplicit*>& ev) {
+        bool collect_edges_keys(std::vector<edge_key>& ev) {
             ev.clear();
             for (auto e : edges) {
-                ev.push_back(&e.second);
+                ev.push_back(e.first);
             }
             return true;
         }
-
+        EdgeExplicit& edge(int index) {
+            edge_key key = edges_keys[index];
+            return edges[key];
+        }
+        const EdgeExplicit& edge(int index) const {
+            edge_key key = edges_keys[index];
+            return edges.at(key);
+        }
         void generate_edges() {
             edges.clear();
+            edges_keys.clear();
             std::uint32_t face_count = 0;
             size_t num_faces = faces.size();
             for (std::uint32_t f = 0; f < num_faces; ++f) {
@@ -228,11 +252,12 @@ namespace btm {
                     auto it = edges.find(desc);
                     if (it == edges.end()) {
                         edges[desc] = EdgeExplicit(v0, v1);
+                        edges_keys.push_back(desc);  // Store the edge key for sequential access
                     }
                     edges[desc].add_incident_face(f);
                 }
             }
-            collect_edges(edges_vec);
+            // collect_edges_keys(edges_keys);
         }
 
         T compute_angle_sum(size_t vertex_index) {
@@ -524,7 +549,6 @@ namespace btm {
 
         std::uint32_t add_face(const FaceExplicit<T>& face) {
             faces.push_back(face);
-            max_edges_count += 3; // each face adds 3 edges, an estimate for now
             return faces.size() - 1; // return the index of the newly added face
         }
 

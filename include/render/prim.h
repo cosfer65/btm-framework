@@ -194,8 +194,15 @@ namespace btm {
                 if (draw_type == GL_TRIANGLES) {
                     glFrontFace(GL_CCW);
                     glPolygonMode(GL_FRONT_AND_BACK, draw_mode);
+                    glDrawElements(draw_type, (unsigned int)num_indices, GL_UNSIGNED_INT, 0);
                 }
-                glDrawElements(draw_type, (unsigned int)num_indices, GL_UNSIGNED_INT, 0);
+                else if (draw_type == GL_LINES) {
+                    glDrawElements(draw_type, (unsigned int)num_indices, GL_UNSIGNED_INT, 0);
+                }
+                else if (draw_type == GL_POINTS) {
+                    glDrawArrays(GL_POINTS, 0, (GLsizei)num_indices);
+                    //glDrawElements(draw_type, (unsigned int)num_indices, GL_UNSIGNED_INT, 0);
+                }
             }
             else
             {

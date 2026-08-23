@@ -46,6 +46,11 @@ namespace btm {
             num_indices = indices.size();
             return (int)(num_indices - 1);
         }
+        int add_index(unsigned int i1) {
+            indices.push_back(i1);
+            num_indices = indices.size();
+            return (int)(num_indices - 1);
+        }
         int add_normal(const fvec3& n) {
             normals.push_back(n.x());
             normals.push_back(n.y());
