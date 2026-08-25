@@ -127,15 +127,15 @@ namespace btm {
 
     template <typename T>
     struct VertexCurvature {
-        T k1;         // principal min
-        T k2;         // principal max;
+        T kmin;         // principal min
+        T kmax;         // principal max;
 
         T mean;       // Mean curvature H = (k_1 + k_2) / 2.
         T gaussian;   // Gaussian curvature K = k_1 * k_2.
 
         /// Principal directions corresponding to 'principal_curvatures'.
-        btm::basevec3<T> k1_dir;
-        btm::basevec3<T> k2_dir;
+        btm::basevec3<T> kmin_dir;
+        btm::basevec3<T> kmax_dir;
 
         btm::basevec3<T> meanCurvatureDir; // this can be computed as the normalized sum of the
         // principal curvature directions weighted by their
@@ -148,9 +148,9 @@ namespace btm {
 
         // cached derived quantities for convenience
         /// Absolute value of the minimum principal curvature |k1|.
-        T abs_k1;
+        T abs_kmin;
         /// Absolute value of the maximum principal curvature |k2|.
-        T abs_k2;
+        T abs_kmax;
         /// Absolute value of mean curvature |H|.
         T absMeanCurvature;
         /// absolute value of Gaussian curvature.
@@ -168,16 +168,16 @@ namespace btm {
         /// @brief Default-initialize all curvature values to zero and label to
         /// unknown.
         VertexCurvature()
-            : k1(0), k2(0), mean(0), gaussian(0), abs_k1(0),
-            abs_k2(0), absMeanCurvature(0), absGaussCurvature(0), signGauss(0),
+            : kmin(0), kmax(0), mean(0), gaussian(0), abs_kmin(0),
+            abs_kmax(0), absMeanCurvature(0), absGaussCurvature(0), signGauss(0),
             signMean(0) {}
         void reset() {
-            k1 = 0;
-            k2 = 0;
+            kmin = 0;
+            kmax = 0;
             mean = 0;
             gaussian = 0;
-            abs_k1 = 0;
-            abs_k2 = 0;
+            abs_kmin = 0;
+            abs_kmax = 0;
             absMeanCurvature = 0;
             absGaussCurvature = 0;
             signGauss = 0;

@@ -132,10 +132,10 @@ namespace curvature
             VertexCurvature<T>& vc = curvatures[v_index];
 
             // k1, k2 and dir1, dir2 are references to vc.
-            T& k1 = vc.k1;
-            T& k2 = vc.k2;
-            basevec3<T>& dir1 = vc.k1_dir;
-            basevec3<T>& dir2 = vc.k2_dir;
+            T& k1 = vc.kmin;
+            T& k2 = vc.kmax;
+            basevec3<T>& dir1 = vc.kmin_dir;
+            basevec3<T>& dir2 = vc.kmax_dir;
 
             // Build tangent frame (t1, t2, n)
             // use vertex normal ni and a safe reference vector ref.
@@ -372,7 +372,7 @@ namespace curvature
             }
 
             // Compute mean curvature using discrete Laplace-Beltrami operator
-            dvec3 laplace(0, 0, 0);
+            basevec3<T> laplace(0, 0, 0);
 
             for (auto neighbor_index : mesh.vertex_adjacency[vertex_index].neighbor_vertices) {
                 T cot_weight = computeCotangentWeight(vertex_index, neighbor_index);
