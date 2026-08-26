@@ -15,7 +15,7 @@ namespace btm {
         int maxTraceSteps = 200;
 
         // --- Dihedral-based creases ---
-        T dihedralAngleThreshold = 10.0;  // degrees
+        T dihedralAngleThreshold = 35.0;  // degrees
 
         // Optional smoothing of traced lines
         bool smoothLines = false;

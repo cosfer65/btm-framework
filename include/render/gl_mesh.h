@@ -224,7 +224,7 @@ namespace btm {
         static std::vector<fvec3> colors = { red, blue, green, yellow, magenta, cyan, white, black, gray };
 
 
-        bool curvatures_computed = mesh->vertex_curvatures.size() > 0;
+        bool curvatures_calculated = mesh->curvatures_calculated();
         // This function converts the MeshExplicit data into a flat format suitable for OpenGL rendering.
         // It iterates over the triangles in the mesh and extracts vertex positions to fill the mesh_data structure.
         size_t index = 0;
@@ -247,7 +247,7 @@ namespace btm {
             mdata.normals.push_back(static_cast<float>(norm.y()));
             mdata.normals.push_back(static_cast<float>(norm.z()));
 
-            if (curvatures_computed) {
+            if (curvatures_calculated) {
                 const auto& c0 = mesh->vertex_curvatures[face.v0];
                 mdata.curvatures.push_back(colors[c0.curvature_map_value].x());
                 mdata.curvatures.push_back(colors[c0.curvature_map_value].y());
@@ -265,7 +265,7 @@ namespace btm {
             mdata.normals.push_back(static_cast<float>(norm.y()));
             mdata.normals.push_back(static_cast<float>(norm.z()));
 
-            if (curvatures_computed) {
+            if (curvatures_calculated) {
                 const auto& c1 = mesh->vertex_curvatures[face.v1];
                 mdata.curvatures.push_back(colors[c1.curvature_map_value].x());
                 mdata.curvatures.push_back(colors[c1.curvature_map_value].y());
@@ -283,7 +283,7 @@ namespace btm {
             mdata.normals.push_back(static_cast<float>(norm.y()));
             mdata.normals.push_back(static_cast<float>(norm.z()));
 
-            if (curvatures_computed) {
+            if (curvatures_calculated) {
                 const auto& c2 = mesh->vertex_curvatures[face.v2];
                 mdata.curvatures.push_back(colors[c2.curvature_map_value].x());
                 mdata.curvatures.push_back(colors[c2.curvature_map_value].y());

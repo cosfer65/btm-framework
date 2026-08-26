@@ -216,6 +216,11 @@ namespace btm {
         size_t num_faces() const { return faces.size(); }
         size_t num_edges() const { return edges.size(); }
 
+        bool curvatures_calculated() const {
+            return vertex_curvatures.size() > 0 && vertex_curvatures.size() == vertices.size();
+        }
+
+
         const btm::btm_vector<VertexExplicit<T>>& get_vertices() const { return vertices; }
         const btm::btm_vector<FaceExplicit<T>>& get_faces() const { return faces; }
         const btm::btm_vector<VertexCurvature<T>>& get_vertex_curvatures() const { return vertex_curvatures; }
@@ -270,6 +275,25 @@ namespace btm {
             return angle_sum;
         }
 
+
+        void calculate_vertex_normals() {
+            // for all vertices
+            size_t num_vertices = vertices.size();
+            for (size_t i = 0; i < num_vertices; ++i) {
+                VertexExplicit<T>& vertex = vertices[i];
+                btm::basevec3<T> norm = btm::basevec3<T>(0, 0, 0);
+                // for all incident faces of vertex i
+                VertexAdjacency& va = vertex_adjacency[i];
+                size_t incident_face_count = va.incident_faces.size();
+                for (size_t j = 0; j < incident_face_count; ++j) {
+                    FaceExplicit<T>& face = faces[va.incident_faces[j]];
+                    norm += face.normal;
+                }
+                // Normalize the normal vector
+                vertex.normal = norm.normalize();
+            }
+        }
+
         // Compute vertex normals based on face normals and corner angles
         // area_sums and angle_sums as well
         void compute_vertex_attributes() {
@@ -295,6 +319,30 @@ namespace btm {
                 vertex.normal = norm.normalize();
                 vertex.area_sum = sum_area;
                 vertex.angle_sum = sum_angle;
+            }
+        }
+
+        void calculate_face_normals() {
+            for (auto& face : faces) {
+                const auto& v0 = vertices[face.v0].position;
+                const auto& v1 = vertices[face.v1].position;
+                const auto& v2 = vertices[face.v2].position;
+                btm::basevec3<T> edge1 = v1 - v0;
+                btm::basevec3<T> edge2 = v2 - v0;
+                face.normal = edge1.cross(edge2).normalize();
+            }
+        }
+
+        void calculate_face_attributes() {
+            for (auto& face : faces) {
+                const auto& v0 = vertices[face.v0].position;
+                const auto& v1 = vertices[face.v1].position;
+                const auto& v2 = vertices[face.v2].position;
+                btm::basevec3<T> edge1 = v1 - v0;
+                btm::basevec3<T> edge2 = v2 - v0;
+                face.normal = edge1.cross(edge2).normalize();
+                face.center = (v0 + v1 + v2) / T(3);
+                face.area = edge1.cross(edge2).length() * T(0.5);
             }
         }
 
@@ -453,9 +501,11 @@ namespace btm {
             for (auto& face : faces) {
                 face.flip();
             }
-            for (auto& vertex : vertices) {
-                vertex.normal = -vertex.normal;
-            }
+            // curvatures are invalidated by flipping the faces, so we clear them to force recomputation
+            vertex_curvatures.clear();
+            // Recompute face normals after flipping
+            calculate_face_normals();
+            calculate_vertex_normals();
         }
 
         void build_adjacency() {
@@ -502,19 +552,6 @@ namespace btm {
                 face.angles[0] = corner_angle(v0, v1, v2);
                 face.angles[1] = corner_angle(v1, v2, v0);
                 face.angles[2] = corner_angle(v2, v0, v1);
-            }
-        }
-
-        void calculate_face_attributes() {
-            for (auto& face : faces) {
-                const auto& v0 = vertices[face.v0].position;
-                const auto& v1 = vertices[face.v1].position;
-                const auto& v2 = vertices[face.v2].position;
-                btm::basevec3<T> edge1 = v1 - v0;
-                btm::basevec3<T> edge2 = v2 - v0;
-                face.normal = edge1.cross(edge2).normalize();
-                face.center = (v0 + v1 + v2) / T(3);
-                face.area = edge1.cross(edge2).length() * T(0.5);
             }
         }
 
