@@ -1,5 +1,4 @@
-#ifndef __mesh_explicit_h__
-#define __mesh_explicit_h__
+#pragma once
 
 #undef min
 #undef max
@@ -689,5 +688,3 @@ namespace btm {
         }
     };
 } // namespace btm
-
-#endif // __mesh_explicit_h__

@@ -1,5 +1,4 @@
 #include "glew.h"
-#include "mesh.h"
 #include "prim.h"
 
 namespace btm {
@@ -11,9 +10,7 @@ namespace btm {
      * @param dr_el Whether to use element drawing (default: true).
      */
     void gl_prim::create_from_mesh(mesh_data* mesh, GLenum drmode /*= GL_FILL*/, bool dr_el /*= true*/) {
-        m_mesh_data = *mesh;
-
-        if (m_mesh_data.num_vertices == 0)
+        if (mesh->num_vertices == 0)
             return;
 
         clear_vao();
@@ -23,229 +20,52 @@ namespace btm {
 
         int idx = 0;
 
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
+        glGenVertexArrays(1, &vertex_array);
+        glBindVertexArray(vertex_array);
 
-        GLuint position_buffer;
-        glGenBuffers(1, &position_buffer);
-        glBindBuffer(GL_ARRAY_BUFFER, position_buffer);
-        glBufferData(GL_ARRAY_BUFFER, m_mesh_data.num_vertices * sizeof(float), &m_mesh_data.vertices[0], GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        // Calculate the sizes of vertex, normal, color, and index data in bytes
+        // trusting sizeof(fvec3) == 3 * sizeof(float) is wrong, so we calculate the sizes explicitly
+        size_t vertex_size = 3 * sizeof(float);
+        size_t normal_size = 3 * sizeof(float);
+        size_t color_size = 3 * sizeof(float);
+        size_t index_size = sizeof(unsigned int);
+
+        glGenBuffers(1, &vertex_buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+        glBufferData(GL_ARRAY_BUFFER, mesh->num_vertices * vertex_size, (float*)mesh->vertices.data(), GL_DYNAMIC_DRAW);
         glEnableVertexAttribArray(idx);
+        glVertexAttribPointer(idx, 3, GL_FLOAT, GL_FALSE, vertex_size, (void*)0);
+        idx++;
 
-        if (m_mesh_data.num_normals) {
-            GLuint normals_buffer;
+        if (mesh->num_normals > 0) {
             glGenBuffers(1, &normals_buffer);
             glBindBuffer(GL_ARRAY_BUFFER, normals_buffer);
-            glBufferData(GL_ARRAY_BUFFER, m_mesh_data.num_normals * sizeof(float), &m_mesh_data.normals[0], GL_STATIC_DRAW);
-            ++idx;
-            glVertexAttribPointer(idx, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+            glBufferData(GL_ARRAY_BUFFER, mesh->num_normals * normal_size, (float*)mesh->normals.data(), GL_DYNAMIC_DRAW);
             glEnableVertexAttribArray(idx);
+            glVertexAttribPointer(idx, 3, GL_FLOAT, GL_FALSE, normal_size, (void*)0);
         }
+        idx++;
 
-        if (m_mesh_data.num_curvatures > 0)
-        {
-            GLuint color_buffer;
-            glGenBuffers(1, &color_buffer);
-            glBindBuffer(GL_ARRAY_BUFFER, color_buffer);
-            glBufferData(GL_ARRAY_BUFFER, m_mesh_data.num_curvatures * sizeof(float), &m_mesh_data.curvatures[0], GL_STATIC_DRAW);
-            ++idx;
-            glVertexAttribPointer(idx, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        if (mesh->num_curvatures > 0) {
+            glGenBuffers(1, &colors_buffer);
+            glBindBuffer(GL_ARRAY_BUFFER, colors_buffer);
+            glBufferData(GL_ARRAY_BUFFER, mesh->num_curvatures * color_size, (float*)mesh->curvatures.data(), GL_DYNAMIC_DRAW);
             glEnableVertexAttribArray(idx);
-            use_vertex_color = 1;
+            glVertexAttribPointer(idx, 3, GL_FLOAT, GL_FALSE, color_size, (void*)0);
         }
+        idx++;
 
-        GLuint index_buffer;
         glGenBuffers(1, &index_buffer);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_mesh_data.num_indices * sizeof(unsigned int), &m_mesh_data.indices[0], GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->num_indices * index_size, (unsigned int*)mesh->indices.data(), GL_STATIC_DRAW);
+
         glBindVertexArray(0);
 
-        num_indices = m_mesh_data.num_indices;  ///< Number of indices in the mesh (required for glDrawElements).
-        num_vertices = m_mesh_data.num_vertices; ///< Number of vertices in the mesh (required for glDrawArrays).
-        num_normals = m_mesh_data.num_normals;  ///< Number of normals in the mesh.
-
+        num_vertices = mesh->num_vertices; ///< Number of vertices in the mesh (required for glDrawArrays).
+        num_indices = mesh->num_indices;  ///< Number of indices in the mesh (required for glDrawElements).
+        num_normals = mesh->num_normals;  ///< Number of normals in the mesh.
+        num_curvatures = mesh->num_curvatures; ///< Number of curvature values in the mesh (if available).
     }
-
-    /**
-     * @brief Creates a gl_prim from a half_edge_mesh.
-     * Converts the half_edge_mesh to mesh_data and initializes a gl_prim object.
-     * @param ms Pointer to half_edge_mesh.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-     // gl_prim* create_prim(half_edge_mesh<double>* ms, GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-     //     if (!ms) return nullptr;
-     //     mesh_data mdata;
-     //     collect_mesh_data<double>(ms, mdata);
-     //     gl_prim* prim = new gl_prim;
-     //     prim->create_from_mesh(&mdata, drmode);
-     //     prim->set_draw_mode(drmode);
-     //     return prim;
-     // }
-
-     /**
-      * @brief Creates a gl_prim from a gl_mesh.
-      * Converts the gl_mesh to mesh_data and initializes a gl_prim object.
-      * @param ms Pointer to gl_mesh.
-      * @param drmode OpenGL draw mode (default: GL_LINE).
-      * @param dr_el Whether to use element drawing (default: true).
-      * @return Pointer to the created gl_prim.
-      */
-    gl_prim* create_prim(gl_mesh* ms, GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        if (!ms) return nullptr;
-        mesh_data mdata;
-        collect_mesh_data(ms, mdata);
-        gl_prim* prim = new gl_prim;
-        prim->create_from_mesh(&mdata, drmode);
-        prim->set_draw_mode(drmode);
-        return prim;
-    }
-#if 0
-    /**
-     * @brief Creates a unit cube primitive.
-     * Generates a half_edge_mesh representing a unit cube and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_cube(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_cube<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit sphere primitive.
-     * Generates a half_edge_mesh representing a unit sphere and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_sphere(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_sphere<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit cylinder primitive.
-     * Generates a half_edge_mesh representing a unit cylinder and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_cylinder(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_cylinder<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit cone primitive.
-     * Generates a half_edge_mesh representing a unit cone and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_cone(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_cone<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit dodecahedron primitive.
-     * Generates a half_edge_mesh representing a unit dodecahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_dodecahedron(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_dodecahedron<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit icosahedron primitive.
-     * Generates a half_edge_mesh representing a unit icosahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_icosahedron(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_icosahedron<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit octahedron primitive.
-     * Generates a half_edge_mesh representing a unit octahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_octa(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_octa<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit pentahedron primitive.
-     * Generates a half_edge_mesh representing a unit pentahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_penta(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_penta<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit plane primitive.
-     * Generates a half_edge_mesh representing a unit plane and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_plane(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_plane<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit tetrahedron primitive.
-     * Generates a half_edge_mesh representing a unit tetrahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_tetra(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_tetra<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit torus primitive.
-     * Generates a half_edge_mesh representing a unit torus and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_torus(GLenum drmode/*=GL_LINE*/, bool dr_el/*=true*/) {
-        std::unique_ptr<half_edge_mesh<double>> ms(create_unit_torus<double, double>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-#endif
 
     /**
      * @class gl_ucs
@@ -268,29 +88,64 @@ namespace btm {
          * Draws three colored axes (X: red, Y: green, Z: blue) using GL_LINES.
          * @param _shader Pointer to the shader used for rendering.
          */
-        virtual void render(gl_shader* _shader) {
-            if (!vao) return;
-            _shader->set_int("object_or_vertex_color", 0);
+        inline virtual void render(gl_shader* _shader) {
+            if (!vertex_array) return;
+            _shader->set_uniform("object_or_vertex_color", 0);
 
             // position object
             fmat4 ob_matrix = tmat * rmat * smat;
-            ob_matrix = ob_matrix.transpose();    // convert for OpenGL!
             ob_matrix = view_matrix * ob_matrix;
 
             // pass transformation to shader
-            _shader->set_mat4("model", ob_matrix);
+            _shader->set_uniform("model", ob_matrix);
 
-            glBindVertexArray(vao);
-            unsigned int point_count = (unsigned int)m_mesh_data.num_indices / 3;
-            _shader->set_vec3("object_color", fvec3(1, 0, 0));
+            glBindVertexArray(vertex_array);
+            unsigned int point_count = (unsigned int)num_indices / 3; // divide the point count by 3 to get the number of points for each axis
+            // _shader->set_vec3("object_color", fvec3(1, 0, 0));
             glDrawElements(GL_LINES, point_count, GL_UNSIGNED_INT, 0);
-            _shader->set_vec3("object_color", fvec3(0, 1, 0));
+            // _shader->set_vec3("object_color", fvec3(0, 1, 0));
             glDrawElements(GL_LINES, point_count, GL_UNSIGNED_INT, (const void*)(point_count * sizeof(unsigned int)));
-            _shader->set_vec3("object_color", fvec3(0, 0, 1));
+            // _shader->set_vec3("object_color", fvec3(0, 0, 1));
             glDrawElements(GL_LINES, point_count, GL_UNSIGNED_INT, (const void*)(2 * point_count * sizeof(unsigned int)));
             glBindVertexArray(0);
         }
     };
+
+    static mesh_data* create_UCS_mesh() {
+        mesh_data* ms = new mesh_data;
+        // the center of the UCS is at the origin
+        // x->red
+        ms->add_vertex(fvec3(0, 0, 0));
+        ms->add_vertex(fvec3(1, 0, 0));
+        ms->add_vertex(fvec3(0.8f, 0.2f, 0));
+        ms->add_vertex(fvec3(0.8f, -0.2f, 0));
+        ms->add_indices(0, 1);
+        ms->add_indices(1, 2);
+        ms->add_indices(1, 3);
+        for (int i = 0; i < 4; ++i) ms->add_color(fvec3(1.f, 0.f, 0.f));
+
+        // y->green
+        ms->add_vertex(fvec3(0, 0, 0));
+        ms->add_vertex(fvec3(0, 1, 0));
+        ms->add_vertex(fvec3(0.2f, 0.8f, 0));
+        ms->add_vertex(fvec3(-0.2f, 0.8f, 0));
+        ms->add_indices(4, 5);
+        ms->add_indices(5, 6);
+        ms->add_indices(5, 7);
+        for (int i = 0; i < 4; ++i) ms->add_color(fvec3(0.f, 1.f, 0.f));
+
+        // z->blue
+        ms->add_vertex(fvec3(0, 0, 0));
+        ms->add_vertex(fvec3(0, 0, 1));
+        ms->add_vertex(fvec3(0, 0.2f, 0.8f));
+        ms->add_vertex(fvec3(0, -0.2f, 0.8f));
+        ms->add_indices(8, 9);
+        ms->add_indices(9, 10);
+        ms->add_indices(9, 11);
+        for (int i = 0; i < 4; ++i) ms->add_color(fvec3(0.f, 0.f, 1.f));
+
+        return ms;
+    }
 
     /**
      * @brief Creates a UCS (Universal Coordinate System) primitive.
@@ -300,11 +155,9 @@ namespace btm {
      * @return Pointer to the created gl_prim (as gl_ucs).
      */
     gl_prim* create_UCS(GLenum drmode /*= GL_FILL*/, bool dr_el /*= true*/) {
-        std::unique_ptr<gl_mesh> ms(create_UCS_mesh());
-        mesh_data mdata;
-        collect_mesh_data(ms.get(), mdata);
+        std::unique_ptr<mesh_data> mdata(create_UCS_mesh());
         gl_prim* p = new gl_ucs();
-        p->create_from_mesh(&mdata, drmode, dr_el);
+        p->create_from_mesh(mdata.get(), drmode, dr_el);
         p->set_draw_mode(drmode);
         return p;
     }

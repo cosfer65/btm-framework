@@ -1,5 +1,5 @@
-#ifndef __arcball_h__
-#define __arcball_h__
+#pragma once
+
 #include "quaternion.h"
 
 namespace btm {
@@ -183,6 +183,3 @@ namespace btm {
         }
     };
 }
-
-#endif // __arcball_h__
-

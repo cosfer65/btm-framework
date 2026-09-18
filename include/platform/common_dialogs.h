@@ -1,5 +1,4 @@
-#ifndef __common_dialogs__
-#define __common_dialogs__
+#pragma once
 
 // #include "utils.h" // force link of library
 
@@ -13,5 +12,3 @@
  * @return A pointer to a string containing the selected file path, or nullptr if no file was selected.
  */
 const char* OpenFileDialog(const char* file_list);
-
-#endif // __common_dialogs__

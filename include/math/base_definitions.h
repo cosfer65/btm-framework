@@ -1,5 +1,5 @@
-#ifndef __base_definitions_h__
-#define __base_definitions_h__
+#pragma once
+
 #undef min
 #undef max
 #include <math.h>
@@ -140,5 +140,3 @@ namespace btm {
         return min + random * (max - min);
     }
 }
-
-#endif // __base_definitions_h__

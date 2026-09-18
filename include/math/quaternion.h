@@ -1,5 +1,4 @@
-#ifndef __quaternion_h__
-#define __quaternion_h__
+#pragma once
 
 #include "base_definitions.h"
 #include "vector.h"
@@ -468,4 +467,3 @@ namespace btm {
      */
     typedef quaternion<double> dquaternion;
 }
-#endif // __quaternion_h__

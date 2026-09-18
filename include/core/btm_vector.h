@@ -5,7 +5,7 @@
 namespace btm {
     // custom vector implementation for fast push_back and access, without using std::vector
     // it does not support shrinking, only growing when capacity is reached
-    // it is not as full featured as std::vector, but it is faster for our use case
+    // it is not as full featured as std::vector, and that keeps it simple and fast
     template <typename T>
     class btm_vector {
         T* data;

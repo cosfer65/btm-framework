@@ -1,12 +1,11 @@
-#ifndef __transformations_h__
-#define __transformations_h__
+#pragma once
 
 #include "matrix.h"
 #include "vector.h"
 
 namespace btm {
     template <typename T>
-    basemat4<T> Translation(T x, T y, T z) {
+    basemat4<T> translation_matrix(T x, T y, T z) {
         basemat4<T> t;
         t.loadIdentity();
         t(0, 3) = x;
@@ -16,7 +15,7 @@ namespace btm {
     }
 
     template <typename T>
-    basemat4<T> RotationX(T angle) {
+    basemat4<T> rotation_x_matrix(T angle) {
         basemat4<T> r;
         r.loadIdentity();
         T c = cos(angle);
@@ -28,7 +27,7 @@ namespace btm {
         return r;
     }
     template <typename T>
-    basemat4<T> RotationY(T angle) {
+    basemat4<T> rotation_y_matrix(T angle) {
         basemat4<T> r;
         r.loadIdentity();
         T c = cos(angle);
@@ -40,7 +39,7 @@ namespace btm {
         return r;
     }
     template <typename T>
-    basemat4<T> RotationZ(T angle) {
+    basemat4<T> rotation_z_matrix(T angle) {
         basemat4<T> r;
         r.loadIdentity();
         T c = cos(angle);
@@ -52,13 +51,13 @@ namespace btm {
         return r;
     }
     template <typename T>
-    basemat4<T> Rotation(T angleX, T angleY, T angleZ) {
-        basemat4<T> r = RotationZ(angleZ) * RotationY(angleY) * RotationX(angleX);
+    basemat4<T> rotation_matrix(T angleX, T angleY, T angleZ) {
+        basemat4<T> r = rotation_z_matrix(angleZ) * rotation_y_matrix(angleY) * rotation_x_matrix(angleX);
         return r;
     }
 
     template <typename T>
-    basemat4<T> Scale(T sx, T sy, T sz) {
+    basemat4<T> scale_matrix(T sx, T sy, T sz) {
         basemat4<T> s;
         s.loadIdentity();
         s(0, 0) = sx;
@@ -68,7 +67,7 @@ namespace btm {
     }
 
     template <typename T>
-    basemat4<T> LookAt(const basevec3<T>& eye, const basevec3<T>& center, const basevec3<T>& up) {
+    basemat4<T> look_at_matrix(const basevec3<T>& eye, const basevec3<T>& center, const basevec3<T>& up) {
         basevec3<T> f = (center - eye);
 
         f = f * (1.0f / f.length());
@@ -93,7 +92,7 @@ namespace btm {
     }
 
     template <typename T>
-    basemat4<T> Perspective(T fov, T aspect, T nearPlane, T farPlane) {
+    basemat4<T> perspective_matrix(T fov, T aspect, T nearPlane, T farPlane) {
         basemat4<T> result;
         result.loadIdentity();
         T tanHalfFOV = tan(fov / 2.0f);
@@ -122,5 +121,3 @@ namespace btm {
         m[12] = m[13] = m[14] = m[3] = m[7] = m[11] = m[15] = T(0);
     }
 }
-
-#endif // __transformations_h__

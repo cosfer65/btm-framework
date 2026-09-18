@@ -1,6 +1,6 @@
 /* fonts for text output */
-#ifndef __font_h__
-#define __font_h__
+#pragma once
+
 #include <windows.h>
 #include <string>
 #include <map>
@@ -201,4 +201,3 @@ namespace btm {
      */
     gl_font_manager& get_font_manager();
 }
-#endif // __FONT_H__

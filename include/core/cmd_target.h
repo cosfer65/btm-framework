@@ -1,5 +1,4 @@
-#ifndef __cmd_target_h__
-#define __cmd_target_h__
+#pragma once
 
 #include <Windows.h>
 #include <map>
@@ -114,5 +113,3 @@ namespace btm {
         }
     };
 }
-
-#endif // __cmd_target_h__

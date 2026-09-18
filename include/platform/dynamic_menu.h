@@ -1,5 +1,4 @@
-#ifndef __dynamic_menu_h__
-#define __dynamic_menu_h__
+#pragma once
 
 #include <Windows.h>
 #include <functional>
@@ -46,5 +45,3 @@ namespace btm
         static Menu* s_Instance; // singleton per window
     };
 }
-
-#endif // __dynamic_menu_h__

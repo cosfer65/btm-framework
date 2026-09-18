@@ -1,5 +1,4 @@
-#ifndef __line_h__
-#define __line_h__
+#pragma once
 
 #include "vector.h"
 
@@ -51,5 +50,3 @@ namespace btm {
         return s.a + ab * t;
     }
 }
-
-#endif // !__line_h__

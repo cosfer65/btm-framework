@@ -1,4 +1,6 @@
-﻿// core functions from Discrete Differential Geometry used to compute curvature on meshes.
+﻿#pragma once
+
+// core functions from Discrete Differential Geometry used to compute curvature on meshes.
 #include <iostream>
 #include <string>
 

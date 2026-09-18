@@ -1,5 +1,4 @@
-#ifndef __algebra_h__
-#define __algebra_h__
+#pragma once
 
 #include <tuple>
 #include "matrix.h"
@@ -210,7 +209,3 @@ namespace btm {
         e_f_g[2] = sol[2];
     }
 };
-#endif // __algebra_h__
-
-
-// https://www.linkedin.com/in/konstantinos-lappas-b17549114/

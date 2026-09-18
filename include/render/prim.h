@@ -1,5 +1,4 @@
-#ifndef __primitives__
-#define __primitives__
+#pragma once
 
 #include "transformations.h"
 #include "gl_mesh.h"
@@ -7,45 +6,43 @@
 #include "shaders.h"
 
 namespace btm {
-    /**
-     * @brief Base class for OpenGL drawable primitives.
-     *
-     * Encapsulates mesh data, transformation matrices, material, and rendering state.
-     * Provides methods for setting transformation, draw mode/type, and rendering.
-     */
     class gl_prim {
     protected:
-        mesh_data m_mesh_data;   ///< Mesh data for the primitive.
-        GLuint vao;              ///< Vertex Array Object handle.
+        // OpenGL handles for the vertex array object and vertex buffer objects
+        GLuint vertex_array = 0;
+        // buffer for vertex positions
+        GLuint vertex_buffer = 0;
+        // buffer for triangle/lines etc indices
+        GLuint index_buffer = 0;
+        // buffer for vertex normals
+        GLuint normals_buffer = 0;
+        // buffer for vertex colors, curvatures and other per-vertex attributes
+        GLuint colors_buffer = 0;
+        // not used so disabled for now, but could be used for texture coordinates
+#if 0
+        // buffer for texture coordinates
+        GLuint tex_coords_buffer = 0;
+        // buffer for tangents & bitangents
+        // they are used for Physically Based Rendering (PBR) and normal mapping,
+        // they are optional and will be used if the mesh has them
+        GLuint tangents_buffer = 0;
+        GLuint bitangents_buffer = 0;
+#endif
+
+        fvec3 object_color = fvec3(0.5f, 0.8f, 0.2f); // Color of the object
+
         size_t num_indices = 0;  ///< Number of indices in the mesh (required for glDrawElements).
         size_t num_vertices = 0; ///< Number of vertices in the mesh (required for glDrawArrays).
         size_t num_normals = 0;  ///< Number of normals in the mesh.
+        size_t num_curvatures = 0; ///< Number of curvature values in the mesh (if available).
 
-        /**
-         * @brief Specifies how polygons will be rasterized.
-         * Accepted values: GL_POINT, GL_LINE, GL_FILL.
-         */
-        GLenum draw_mode;
-
-        /**
-         * @brief Specifies the OpenGL primitive type for drawing.
-         * Common values: GL_TRIANGLES, GL_LINES, GL_PATCHES, etc.
-         */
-        GLenum draw_type;
-
-        /**
-         * @brief If true, uses glDrawElements; otherwise, uses glDrawArrays.
-         */
-        bool draw_elements;
+        GLenum draw_mode; // Specifies how polygons will be rasterized: GL_POINT, GL_LINE, GL_FILL.
+        GLenum draw_type;  // Specifies the OpenGL primitive type for drawing: GL_TRIANGLES, GL_LINES, GL_PATCHES, etc.
+        bool draw_elements; // If true, uses glDrawElements; otherwise, uses glDrawArrays.
 
         fvec3 position;           ///< Object position in world space.
         fvec3 scale;              ///< Object scale factors.
         fvec3 rotation;           ///< Object rotation angles (radians).
-
-        /**
-         * @brief If nonzero, enables per-vertex color in the shader.
-         */
-        int use_vertex_color;
 
         fvec3 m_color;           ///< Base color of the primitive.
         cg_material* m_material; ///< Material for shading the primitive.
@@ -62,33 +59,21 @@ namespace btm {
          * @brief Constructs a gl_prim with default transformation and rendering state.
          */
         gl_prim() {
-            vao = 0;
             scale = fvec3(1);
             position = fvec3(0);
             rotation = fvec3(0);
             draw_mode = GL_FILL;
             draw_type = GL_TRIANGLES;
             draw_elements = true;
-            // matrices are row-major!
+            // matrices are col-major!
             rotate_to(rotation);
-            smat = Scale<float>(scale.x(), scale.y(), scale.z());
+            smat = scale_matrix<float>(scale.x(), scale.y(), scale.z());
             move_to(position);
-            use_vertex_color = 0;
             m_texture = 0;
             m_material = nullptr;
             m_color = fvec3(0.8f, 0.8f, 0.8f);
             force_black = false;
             view_matrix.loadIdentity();
-        }
-
-        int get_use_vertex_color() const {
-            return use_vertex_color;
-        }
-
-        int set_use_vertex_color(int v) {
-            int ret = use_vertex_color;
-            use_vertex_color = v;
-            return ret;
         }
 
         /**
@@ -99,22 +84,34 @@ namespace btm {
         }
 
         void clear_vao() {
-            if (vao) {
-                glDeleteVertexArrays(1, &vao);
-                vao = 0;
-            }
+            glDeleteVertexArrays(1, &vertex_array);
+            glDeleteBuffers(1, &vertex_buffer);
+            glDeleteBuffers(1, &normals_buffer);
+            glDeleteBuffers(1, &colors_buffer);
+            // glDeleteBuffers(1, &tex_coords_buffer);
+            glDeleteBuffers(1, &index_buffer);
+            // glDeleteBuffers(1, &tangents_buffer);
+            // glDeleteBuffers(1, &bitangents_buffer);
+            vertex_array = 0;
+            vertex_buffer = 0;
+            normals_buffer = 0;
+            colors_buffer = 0;
+            // tex_coords_buffer = 0;
+            index_buffer = 0;
+            // tangents_buffer = 0;
+            // bitangents_buffer = 0;
             num_vertices = 0;
             num_normals = 0;
             num_indices = 0;
         }
 
         void clear_mesh_data() {
-            m_mesh_data.vertices.clear();
-            m_mesh_data.normals.clear();
-            m_mesh_data.indices.clear();
-            m_mesh_data.num_vertices = 0;
-            m_mesh_data.num_normals = 0;
-            m_mesh_data.num_indices = 0;
+            // m_mesh_data.vertices.clear();
+            // m_mesh_data.normals.clear();
+            // m_mesh_data.indices.clear();
+            // m_mesh_data.num_vertices = 0;
+            // m_mesh_data.num_normals = 0;
+            // m_mesh_data.num_indices = 0;
         }
         void clear() {
             clear_vao();
@@ -170,24 +167,18 @@ namespace btm {
          * @param _shader Pointer to the shader program.
          */
         virtual void render(gl_shader* _shader) {
-            if (!vao) return;
+            if (!vertex_array) return;
 
-            if (force_black) {
-                _shader->set_vec3("object_color", fvec3(0, 0, 0));
-            }
-            else {
-                _shader->set_vec3("object_color", m_color);
-            }
+            _shader->set_uniform("object_color", m_color);
 
             // position object
             fmat4 model_matrix = tmat * rmat * smat;
-            model_matrix = model_matrix.transpose();    // convert to column wise for OpenGL!
             model_matrix = view_matrix * model_matrix;
 
             // pass transformation to shader
-            _shader->set_mat4("model", model_matrix);
+            _shader->set_uniform("model", model_matrix);
 
-            glBindVertexArray(vao);
+            glBindVertexArray(vertex_array);
             if (draw_elements)
             {
                 // setup drawing
@@ -201,7 +192,6 @@ namespace btm {
                 }
                 else if (draw_type == GL_POINTS) {
                     glDrawArrays(GL_POINTS, 0, (GLsizei)num_indices);
-                    //glDrawElements(draw_type, (unsigned int)num_indices, GL_UNSIGNED_INT, 0);
                 }
             }
             else
@@ -235,7 +225,7 @@ namespace btm {
             scale = _s;
             rotation = _r;
             move_to(position);
-            smat = Scale<float>(scale.x(), scale.y(), scale.z());
+            smat = scale_matrix<float>(scale.x(), scale.y(), scale.z());
             rotate_to(rotation);
         }
 
@@ -245,7 +235,7 @@ namespace btm {
          */
         void rotate_to(const fvec3& _r) {
             rotation = _r;
-            rmat = Rotation<float>(rotation.x(), rotation.y(), rotation.z());
+            rmat = rotation_matrix<float>(rotation.x(), rotation.y(), rotation.z());
         }
 
         /**
@@ -255,8 +245,7 @@ namespace btm {
          * @param z Rotation around Z axis (radians).
          */
         void rotate_to(float x, float y, float z) {
-            rotation = fvec3(x, y, z);
-            rotate_to(rotation);
+            rotate_to(fvec3(x, y, z));
         }
 
         /**
@@ -285,7 +274,7 @@ namespace btm {
          */
         void move_to(const fvec3& _r) {
             position = _r;
-            tmat = Translation<float>(position.x(), position.y(), position.z());
+            tmat = translation_matrix<float>(position.x(), position.y(), position.z());
         }
 
         /**
@@ -332,7 +321,7 @@ namespace btm {
          */
         void set_scale(const fvec3& _s) {
             scale = _s;
-            smat = Scale<float>(scale.x(), scale.y(), scale.z());
+            smat = scale_matrix<float>(scale.x(), scale.y(), scale.z());
         }
 
         /**
@@ -342,8 +331,7 @@ namespace btm {
          * @param z Scale along Z axis.
          */
         void set_scale(float x, float y, float z) {
-            scale = fvec3(x, y, z);
-            set_scale(scale);
+            set_scale(fvec3(x, y, z));
         }
 
         /**
@@ -405,17 +393,6 @@ namespace btm {
      * @param dr_el Whether to use element drawing (default: true).
      * @return Pointer to the created gl_prim.
      */
-     // gl_prim* create_prim(mesh<float>* ms, GLenum drmode=GL_LINE, bool dr_el=true);
-    template <typename T>
-    gl_prim* create_prim(btm::mesh<T>* ms, GLenum drmode = GL_LINE, bool dr_el = true) {
-        if (!ms) return nullptr;
-        mesh_data mdata;
-        collect_mesh_data<T>(ms, mdata);
-        gl_prim* prim = new gl_prim;
-        prim->create_from_mesh(&mdata, drmode);
-        prim->set_draw_mode(drmode);
-        return prim;
-    }
 
     template <typename T>
     gl_prim* create_prim(btm::MeshExplicit<T>* ms, GLenum drmode = GL_LINE, bool dr_el = true) {
@@ -435,251 +412,7 @@ namespace btm {
      * @param dr_el Whether to use element drawing (default: true).
      * @return Pointer to the created gl_prim.
      */
-    gl_prim* create_prim(gl_mesh* ms, GLenum drmode = GL_LINE, bool dr_el = true);
-
-#if 0
-    /**
-     * @brief Creates a cone primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_cone(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates a cube primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_cube(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates a cylinder primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_cylinder(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates a dodecahedron primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_dodecahedron(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates an icosahedron primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_icosahedron(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates an octahedron primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_octa(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates a pentagonal primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_penta(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates a plane primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_plane(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates a sphere primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_sphere(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates a tetrahedron primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_tetra(GLenum drmode = GL_LINE, bool dr_el = true);
-
-    /**
-     * @brief Creates a torus primitive.
-     * @param drmode Polygon rasterization mode.
-     * @param dr_el If true, use glDrawElements; otherwise, use glDrawArrays.
-     * @return Pointer to the created gl_prim.
-     */
-    gl_prim* create_torus(GLenum drmode = GL_LINE, bool dr_el = true);
-#endif
-
-    /**
-     * @brief Creates a unit cube primitive.
-     * Generates a mesh representing a unit cube and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_cube(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_cube<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit sphere primitive.
-     * Generates a mesh representing a unit sphere and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_sphere(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_sphere<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit cylinder primitive.
-     * Generates a mesh representing a unit cylinder and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_cylinder(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_cylinder<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit cone primitive.
-     * Generates a mesh representing a unit cone and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_cone(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_cone<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit dodecahedron primitive.
-     * Generates a mesh representing a unit dodecahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_dodecahedron(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_dodecahedron<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit icosahedron primitive.
-     * Generates a mesh representing a unit icosahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_icosahedron(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_icosahedron<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit octahedron primitive.
-     * Generates a mesh representing a unit octahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_octa(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_octa<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit pentahedron primitive.
-     * Generates a mesh representing a unit pentahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_penta(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_penta<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit plane primitive.
-     * Generates a mesh representing a unit plane and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_plane(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_plane<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit tetrahedron primitive.
-     * Generates a mesh representing a unit tetrahedron and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_tetra(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_tetra<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
-
-    /**
-     * @brief Creates a unit torus primitive.
-     * Generates a mesh representing a unit torus and returns a gl_prim.
-     * @param drmode OpenGL draw mode (default: GL_LINE).
-     * @param dr_el Whether to use element drawing (default: true).
-     * @return Pointer to the created gl_prim.
-     */
-    template <typename T, typename Tinput>
-    gl_prim* create_torus(GLenum drmode = GL_LINE, bool dr_el = true) {
-        std::unique_ptr<mesh<T>> ms(create_unit_torus<T, Tinput>());
-        gl_prim* p = create_prim(ms.get(), drmode, dr_el);
-        return p;
-    }
+    gl_prim* create_prim(mesh_data* ms, GLenum drmode = GL_LINE, bool dr_el = true);
 
     /**
      * @brief Creates a Universal Coordinate System (XYZ axes with arrows).
@@ -689,5 +422,3 @@ namespace btm {
      */
     gl_prim* create_UCS(GLenum drmode = GL_LINE, bool dr_el = true);
 }
-
-#endif // __primitives__

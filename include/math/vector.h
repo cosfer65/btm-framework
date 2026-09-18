@@ -1,12 +1,11 @@
-#ifndef __vector_h__
-#define __vector_h__
+#pragma once
 
 #include <cassert>
 #include "matrix.h"
 
 namespace btm {
     /**
-     * @brief A small, fixed-size N-component vector class template.
+     * @brief A small, fixed-size N-component vector struct template.
      *
      * Supports 2, 3 or 4 component vectors (compile-time C). Provides basic
      * arithmetic, length, normalization, dot/cross products and conversions.
@@ -14,13 +13,17 @@ namespace btm {
      * @tparam T Scalar type (e.g., float, double, int).
      * @tparam C Number of components (2, 3 or 4).
      */
-    template <typename T, size_t C> class basevector {
+    template <typename T, size_t C> struct basevector {
         static_assert(C >= 2 && C <= 4,
             "basevector only supports 2, 3, or 4 components");
 
     public:
         /// Raw storage for components. Indexed as data[0]..data[C-1].
         T data[C] = { T(0) };
+
+        int size_of() {
+            return sizeof(data);
+        }
 
         /**
          * Component accessors.
@@ -91,7 +94,7 @@ namespace btm {
             data[C - 1] = _n;
         }
 
-        virtual ~basevector() {}
+        ~basevector() {}
 
         /// Copy assignment
         basevector& operator=(const basevector& v) {
@@ -391,6 +394,20 @@ namespace btm {
     using fpoint3 = basepoint3<float>;
     using dpoint3 = basepoint3<double>;
 
-} // namespace btm
+    /////////////////////////////////////////////////////////
+    using vector2 = btm::basevector<float, 2>;
+    using vector3 = btm::basevector<float, 3>;
+    using vector4 = btm::basevector<float, 4>;
 
-#endif // __vector_h__
+    // aliases for convenience when using OpenGL
+    using vec2 = btm::basevector<float, 2>;
+    using vec3 = btm::basevector<float, 3>;
+    using vec4 = btm::basevector<float, 4>;
+
+    // Type aliases for points
+    using point2 = vector2;
+    using point3 = vector3;
+    using point4 = vector4;
+
+
+} // namespace btm

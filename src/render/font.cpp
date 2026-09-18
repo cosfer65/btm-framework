@@ -278,8 +278,7 @@ namespace btm {
             translate_matrix(ttm, offset);
             // putting translation at the end treats the text as a unit
             fmat4 ob_matrix = rmat * smat * ttm;
-            ob_matrix = ob_matrix.transpose();    // convert for OpenGL!
-            shader->set_mat4("model", ob_matrix);
+            shader->set_uniform("model", ob_matrix);
             glCallLists(1, GL_UNSIGNED_BYTE, &text[i]);
             offset.x() += gmf[text[i]].gmfCellIncX;
         }

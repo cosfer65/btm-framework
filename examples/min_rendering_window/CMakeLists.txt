@@ -1,6 +1,6 @@
 set(NAME "min_rendering_window")
 
-add_executable(${NAME} main.cpp)
+add_executable(${NAME} min_rendering_window.cpp)
 
 target_link_libraries(${NAME} PRIVATE btm-framework)
 

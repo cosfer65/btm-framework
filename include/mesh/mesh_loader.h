@@ -1,5 +1,4 @@
-#ifndef __mesh_loader__
-#define __mesh_loader__
+#pragma once
 
 #include <fstream>
 #include <string>
@@ -101,5 +100,3 @@ namespace btm {
         return true;
     }
 }
-
-#endif // __mesh_loader__

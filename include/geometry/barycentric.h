@@ -1,5 +1,4 @@
-#ifndef __barycentric_h__
-#define __barycentric_h__
+#pragma once
 
 #include "vector.h"
 
@@ -45,5 +44,3 @@ namespace btm {
             b.u <= 1 && b.v <= 1 && b.w <= 1;
     }
 } // namespace btm
-
-#endif // __barycentric_h__

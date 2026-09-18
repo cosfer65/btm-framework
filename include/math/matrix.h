@@ -1,5 +1,4 @@
-#ifndef __matrix_h__
-#define __matrix_h__
+#pragma once
 
 #include <cmath>
 #include <vector>
@@ -14,26 +13,28 @@ namespace btm {
     ///////////////////////////////////////////////////////////////////////////////////
     // matrices are row-major
     // assuming a 4x4 matrix, it is laid out as:
-    //  0  1  2  3
-    //  4  5  6  7
-    //  8  9 10 11
-    // 12 13 14 15
+    //  0  4  8 12
+    //  1  5  9 13
+    //  2  6 10 14
+    //  3  7 11 15
+    //
+    // make matrices column major to speed display with OpenGL,
+    // which expects column major matrices. This is a tradeoff,
+    // as it makes some operations less intuitive,
+    // but it is more efficient for graphics applications.
 
     template <typename T, size_t ROWS, size_t COLS>
-    class basematrix {
+    struct basematrix {
     public:
-        // data_length is a compile-time constant, so we can use it in loops and other places where a constant expression is required.
-        // const size_t data_length = ROWS * COLS;
         T data[ROWS * COLS]{ T(0) };
 
-        size_t data_length() const {
-            return ROWS * COLS;
+        int size_of() {
+            return sizeof(data);
         }
 
-        basematrix() {
-        }
+        basematrix() {}
 
-        basematrix(const basematrix<T,ROWS,COLS>& m) {
+        basematrix(const basematrix<T, ROWS, COLS>& m) {
             memcpy(data, m.data, ROWS * COLS * sizeof(T));
         }
 
@@ -58,8 +59,7 @@ namespace btm {
             }
         }
 
-        virtual ~basematrix() {
-        }
+        ~basematrix() {}
 
         size_t rows() const {
             return ROWS;
@@ -70,11 +70,11 @@ namespace btm {
         }
 
         T& operator()(size_t row, size_t col) {
-            return data[row * COLS + col];
+            return data[col * ROWS + row];
         }
 
         const T& operator()(size_t row, size_t col) const {
-            return data[row * COLS + col];
+            return data[col * ROWS + row];
         }
 
         basematrix<T, ROWS, COLS>& operator=(const basematrix<T, ROWS, COLS>& m) {
@@ -161,7 +161,7 @@ namespace btm {
         }
 
         template <size_t R2, size_t C2> requires (COLS == R2)
-        basematrix<T, ROWS, C2> operator*(const basematrix<T, R2, C2>& op2) const {
+            basematrix<T, ROWS, C2> operator*(const basematrix<T, R2, C2>& op2) const {
             basematrix<T, ROWS, C2> res;
             for (size_t r = 0; r < ROWS; ++r) {
                 for (size_t c = 0; c < C2; ++c) {
@@ -174,7 +174,7 @@ namespace btm {
             return res;
         }
 
-        basematrix<T, COLS, ROWS> transpose() const{
+        basematrix<T, COLS, ROWS> transpose() const {
             basematrix<T, COLS, ROWS> t;
             for (size_t r = 0; r < ROWS; ++r) {
                 for (size_t c = 0; c < COLS; ++c) {
@@ -218,7 +218,7 @@ namespace btm {
 
         bool operator==(const basematrix<T, ROWS, COLS>& B) const {
             for (size_t i = 0; i < ROWS * COLS; ++i) {
-                if (T(fabs((*this)[i] - B[i]))>TOLLERANCE<T>)
+                if (T(fabs((*this)[i] - B[i])) > TOLLERANCE<T>)
                     return false;
             }
             return true;
@@ -250,11 +250,11 @@ namespace btm {
 
         void print_line(const std::string& label = "") const {
             std::cout << label;
-            for (size_t i = 0; i < data_length; ++i) {
+            for (size_t i = 0; i < ROWS * COLS; ++i) {
                 std::cout << data[i] << " ";
             }
             std::cout << std::endl;
-		}
+        }
 #endif
     };
 
@@ -262,7 +262,6 @@ namespace btm {
     basematrix<T, ROWS, COLS> operator*(Q v, const basematrix<T, ROWS, COLS>& op1) {
         return op1 * v;
     }
-    
 
 #if 0
     template <typename T>
@@ -270,11 +269,11 @@ namespace btm {
         T det = m[0] * (m[4] * m[8] - m[5] * m[7])
             - m[1] * (m[3] * m[8] - m[5] * m[6])
             + m[2] * (m[3] * m[7] - m[4] * m[6]);
-    
+
         if (det == 0) return false; // Singular matrix
-    
+
         T invDet = T(1.0) / det;
-    
+
         invOut[0] = (m[4] * m[8] - m[5] * m[7]) * invDet;
         invOut[1] = -(m[1] * m[8] - m[2] * m[7]) * invDet;
         invOut[2] = (m[1] * m[5] - m[2] * m[4]) * invDet;
@@ -284,10 +283,9 @@ namespace btm {
         invOut[6] = (m[3] * m[7] - m[4] * m[6]) * invDet;
         invOut[7] = -(m[0] * m[7] - m[1] * m[6]) * invDet;
         invOut[8] = (m[0] * m[4] - m[1] * m[3]) * invDet;
-    
+
         return true;
     }
-
 
     template <typename M>
     concept MatrixLike =
@@ -370,7 +368,7 @@ namespace btm {
     }
 
     template <typename T, size_t RC> requires (RC > 2)
-    T determinant(const basematrix<T, RC, RC>& mat) {
+        T determinant(const basematrix<T, RC, RC>& mat) {
         size_t n = mat.rows();
         if (n >= 3) {
             T det = 0.0;
@@ -387,7 +385,7 @@ namespace btm {
     }
 
     template <typename T, size_t RC> requires (RC == 2)
-    T determinant(const basematrix<T, RC, RC>& mat) {
+        T determinant(const basematrix<T, RC, RC>& mat) {
         return mat(0, 0) * mat(1, 1) - mat(0, 1) * mat(1, 0);
     }
 
@@ -396,32 +394,32 @@ namespace btm {
     template <typename T> using basemat3 = basematrix<T, 3, 3>;
     template <typename T> using basemat4 = basematrix<T, 4, 4>;
 
-    typedef basematrix<float, 2, 2> fmat2;
-    typedef basematrix<float, 3, 3> fmat3;
-    typedef basematrix<float, 4, 4> fmat4;
-    typedef basematrix<float, 2, 1> fmat2x1;
-    typedef basematrix<float, 1, 2> fmat1x2;
-    typedef basematrix<float, 3, 1> fmat3x1;
-    typedef basematrix<float, 1, 3> fmat1x3;
-    typedef basematrix<float, 3, 2> fmat3x2;
-    typedef basematrix<float, 2, 3> fmat2x3;
-    typedef basematrix<float, 3, 6> fmat3x6;
-    typedef basematrix<float, 6, 3> fmat6x3;
-    typedef basematrix<float, 6, 1> fmat6x1;
-    typedef basematrix<float, 2, 2> fmat2x2;
+    using matrix4 = btm::basematrix<float, 4, 4>;
 
-    typedef basematrix<double, 3, 3> dmat3;
-    typedef basematrix<double, 4, 4> dmat4;
-    typedef basematrix<double, 2, 1> dmat2x1;
-    typedef basematrix<double, 1, 2> dmat1x2;
-    typedef basematrix<double, 3, 1> dmat3x1;
-    typedef basematrix<double, 1, 3> dmat1x3;
-    typedef basematrix<double, 3, 2> dmat3x2;
-    typedef basematrix<double, 2, 3> dmat2x3;
-    typedef basematrix<double, 3, 6> dmat3x6;
-    typedef basematrix<double, 6, 3> dmat6x3;
-    typedef basematrix<double, 6, 1> dmat6x1;
-    typedef basematrix<double, 2, 2> dmat2x2;
+    using fmat2 = basematrix<float, 2, 2>;
+    using fmat3 = basematrix<float, 3, 3>;
+    using fmat4 = basematrix<float, 4, 4>;
+    using fmat2x1 = basematrix<float, 2, 1>;
+    using fmat1x2 = basematrix<float, 1, 2>;
+    using fmat3x1 = basematrix<float, 3, 1>;
+    using fmat1x3 = basematrix<float, 1, 3>;
+    using fmat3x2 = basematrix<float, 3, 2>;
+    using fmat2x3 = basematrix<float, 2, 3>;
+    using fmat3x6 = basematrix<float, 3, 6>;
+    using fmat6x3 = basematrix<float, 6, 3>;
+    using fmat6x1 = basematrix<float, 6, 1>;
+    using fmat2x2 = basematrix<float, 2, 2>;
+
+    using dmat3 = basematrix<double, 3, 3>;
+    using dmat4 = basematrix<double, 4, 4>;
+    using dmat2x1 = basematrix<double, 2, 1>;
+    using dmat1x2 = basematrix<double, 1, 2>;
+    using dmat3x1 = basematrix<double, 3, 1>;
+    using dmat1x3 = basematrix<double, 1, 3>;
+    using dmat3x2 = basematrix<double, 3, 2>;
+    using dmat2x3 = basematrix<double, 2, 3>;
+    using dmat3x6 = basematrix<double, 3, 6>;
+    using dmat6x3 = basematrix<double, 6, 3>;
+    using dmat6x1 = basematrix<double, 6, 1>;
+    using dmat2x2 = basematrix<double, 2, 2>;
 }
-
-#endif // __matrix_h__

@@ -1,8 +1,7 @@
 /// \file gl_camera.h
 /// \brief Declares the `btm::gl_camera` class, a simple OpenGL camera wrapper.
 
-#ifndef __camera_h__
-#define __camera_h__
+#pragma once
 
 #undef max
 
@@ -248,9 +247,9 @@ namespace btm {
             fmat4 view = view_matrix();
             fmat4 projection = projection_matrix();
             fvec3 loc = get_location();
-            shdr->set_mat4("view", view);
-            shdr->set_mat4("projection", projection);
-            shdr->set_vec3("cameraPos", loc);
+            shdr->set_uniform("view", view);
+            shdr->set_uniform("projection", projection);
+            shdr->set_uniform("cameraPos", loc);
         }
 
         // Computes the optimal camera distance so that an object fits fully on screen
@@ -293,5 +292,3 @@ namespace btm {
 
     };
 }
-
-#endif // __camera_h__

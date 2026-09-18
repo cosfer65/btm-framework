@@ -1,36 +1,29 @@
-#ifndef __gl_mesh_h__
-#define __gl_mesh_h__
+#pragma once
 
 #include <vector>
 #include "vector.h"
 
-#include "mesh.h"
 #include "mesh_explicit.h"
 
 using namespace btm;
 
 namespace btm {
-
-    /**
-     * @struct mesh_data
-     * @brief Stores raw mesh data for rendering or processing.
-     *
-     * Contains meshVertex, normal, and index counts, as well as the corresponding data arrays.
-     */
     struct mesh_data {
-        size_t num_vertices=0;                ///< Number of vertices in the mesh.
-        size_t num_normals=0;                 ///< Number of normals in the mesh.
-        size_t num_indices=0;                 ///< Number of indices in the mesh.
-        size_t num_curvatures=0;              ///< Number of curvature values (if available).
-        std::vector<float> vertices;        ///< Flat array of meshVertex positions (x, y, z).
-        std::vector<float> normals;         ///< Flat array of normal vectors (x, y, z).
-        std::vector<unsigned int> indices;  ///< Indices defining mesh faces.
-        std::vector<float> curvatures;      ///< Optional array of curvature values per meshVertex (if available).
+        size_t num_vertices = 0;                ///< Number of vertices in the mesh.
+        size_t num_normals = 0;                 ///< Number of normals in the mesh.
+        size_t num_indices = 0;                 ///< Number of indices in the mesh.
+        size_t num_curvatures = 0;              ///< Number of curvature values (if available).
+        std::vector<float> vertices;            ///< Flat array of meshVertex positions (x, y, z).
+        std::vector<float> normals;             ///< Flat array of normal vectors (x, y, z).
+        std::vector<unsigned int> indices;      ///< Indices defining mesh faces.
+        std::vector<float> curvatures;          ///< Optional array of curvature values per meshVertex (if available). [per vertex color support]
+
         int add_vertex(const fvec3& v) {
             vertices.push_back(v.x());
             vertices.push_back(v.y());
             vertices.push_back(v.z());
-            num_vertices = vertices.size();
+            // divide to get to the number of vertices, not the number of floats
+            num_vertices = vertices.size()/3;
             return (int)(num_vertices - 1);
         }
         int add_indices(unsigned int i1, unsigned int i2, unsigned int i3) {
@@ -55,87 +48,20 @@ namespace btm {
             normals.push_back(n.x());
             normals.push_back(n.y());
             normals.push_back(n.z());
-            num_normals = normals.size();
+            num_normals = normals.size() / 3;
             return (int)(num_normals - 1);
         }
-    };
-
-    /**
-     * @class gl_mesh
-     * @brief Represents a simple mesh structure for drawing.
-     *
-     * Stores vertices, normals, indices, and texture coordinates.
-     */
-    class gl_mesh {
-    public:
-        std::vector<fvec3> vertices;         ///< List of meshVertex positions.
-        std::vector<fvec3> normals;          ///< List of normal vectors.
-        std::vector<unsigned int> indices;   ///< Indices for mesh faces.
-
-        /**
-         * @brief Default constructor.
-         */
-        gl_mesh() {}
-
-        /**
-         * @brief Destructor.
-         */
-        ~gl_mesh() {}
-
-        /**
-         * @brief Returns the number of vertices in the mesh.
-         * @return Number of vertices.
-         */
-        size_t n_vertices() {
-            return vertices.size();
+        int add_curvature(const fvec3& c) {
+            curvatures.push_back(c.x());
+            curvatures.push_back(c.y());
+            curvatures.push_back(c.z());
+            num_curvatures = curvatures.size() / 3;
+            return (int)(num_curvatures - 1);
         }
-
-        /**
-         * @brief Adds a meshVertex to the mesh.
-         * @param v The meshVertex position to add.
-         */
-        void add_vertex(const fvec3& v) {
-            vertices.push_back(v);
-        }
-
-        /**
-         * @brief Adds a normal vector to the mesh.
-         * @param n The normal vector to add.
-         */
-        void addNormal(const fvec3& n) {
-            normals.push_back(n);
-        }
-
-        /**
-         * @brief Adds a triangle face to the mesh using three indices.
-         * @param i1 First index.
-         * @param i2 Second index.
-         * @param i3 Third index.
-         */
-        void addIndices(unsigned int i1, unsigned int i2, unsigned int i3) {
-            indices.push_back(i1);
-            indices.push_back(i2);
-            indices.push_back(i3);
-        }
-
-        /**
-         * @brief Adds an edge or line to the mesh using two indices.
-         * @param i1 First index.
-         * @param i2 Second index.
-         */
-        void addIndices(unsigned int i1, unsigned int i2) {
-            indices.push_back(i1);
-            indices.push_back(i2);
+        int add_color(const fvec3& c) {
+            return add_curvature(c);
         }
     };
-
-    /**
-     * @brief Collects mesh data from a gl_mesh object into a mesh_data structure.
-     * @param mesh Pointer to the gl_mesh object.
-     * @param mdata Reference to the mesh_data structure to fill.
-     * @return True if successful, false otherwise.
-     */
-    bool collect_mesh_data(gl_mesh* mesh, mesh_data& mdata);
 
     template <typename T>
     T mix(T a, T b, float t) {
@@ -151,64 +77,6 @@ namespace btm {
         return a * w1 + b * w2 + c * w3;
     }
 
-    /**
-     * @brief Collects mesh data from a mesh object into a mesh_data structure.
-     * @param mesh Pointer to the mesh object.
-     * @param mdata Reference to the mesh_data structure to fill.
-     * @return True if successful, false otherwise.
-     */
-    template <typename T>
-    bool collect_mesh_data(const mesh<T>* mesh, mesh_data& mdata) {
-        static fvec3 red = fvec3(1, 0, 0);
-        static fvec3 blue = fvec3(0, 0, 1);
-        static fvec3 green = fvec3(0, 1, 0);
-        static fvec3 yellow = fvec3(1, 1, 0);
-        static fvec3 magenta = fvec3(1, 0, 1);
-        static fvec3 cyan = fvec3(0, 1, 1);
-        static fvec3 white = fvec3(1, 1, 1);
-        static fvec3 black = fvec3(0, 0, 0);
-        static fvec3 gray = fvec3(0.5f, 0.5f, 0.5f);
-        static std::vector<fvec3> colors = { red, blue, green, yellow, magenta, cyan, white, black, gray };
-
-        // build data from half-edge mesh based on its faces
-        // this allows for proper duplication of vertices/normals per face
-        // it is better for flat shading
-        size_t index = mdata.vertices.size() / 3;
-        const std::map<size_t, meshVertex<T>*>& vertices = mesh->vertices;
-        for (auto f_pair : mesh->faces) {
-            meshFace<T>* f = f_pair.second;
-            size_t v_ids[3] = { f->vertices[0]->id, f->vertices[1]->id, f->vertices[2]->id };
-            fvec3 face_normal = fvec3(float(f->normal.x()), float(f->normal.y()), float(f->normal.z()));
-            for (int i = 0; i < 3; ++i) {
-                dvec3 vert = vertices.at(v_ids[i])->position;
-                size_t i1 = index;
-                mdata.vertices.push_back(float(vert.x()));
-                mdata.vertices.push_back(float(vert.y()));
-                mdata.vertices.push_back(float(vert.z()));
-                mdata.normals.push_back(face_normal.x());
-                mdata.normals.push_back(face_normal.y());
-                mdata.normals.push_back(face_normal.z());
-                mdata.indices.push_back(static_cast<unsigned int>(i1));
-                if (mesh->curvatures_computed()) {
-                    int curvature_index = vertices.at(v_ids[i])->curvature_map_value;
-                    fvec3 color = colors[curvature_index];
-
-                    mdata.curvatures.push_back(color.x());
-                    mdata.curvatures.push_back(color.y());
-                    mdata.curvatures.push_back(color.z());
-                }
-
-                ++index;
-            }
-        }
-
-        mdata.num_vertices = mdata.vertices.size();
-        mdata.num_normals = mdata.normals.size();
-        mdata.num_indices = mdata.indices.size();
-        mdata.num_curvatures = mdata.curvatures.size();
-
-        return true;
-    }
 
     template <typename T>
     void collect_mesh_data(const MeshExplicit<T>* mesh, mesh_data& mdata) {
@@ -223,14 +91,13 @@ namespace btm {
         static fvec3 gray = fvec3(0.5f, 0.5f, 0.5f);
         static std::vector<fvec3> colors = { red, blue, green, yellow, magenta, cyan, white, black, gray };
 
-
         bool curvatures_calculated = mesh->curvatures_calculated();
         // This function converts the MeshExplicit data into a flat format suitable for OpenGL rendering.
         // It iterates over the triangles in the mesh and extracts vertex positions to fill the mesh_data structure.
         size_t index = 0;
         // do NOT call size() on the vector all the time, as functioncalls are expensive
         // instead, store the size in a variable and use that for the loop condition
-        size_t num_faces = mesh->faces.size(); 
+        size_t num_faces = mesh->faces.size();
         for (size_t cur_face = 0; cur_face < num_faces; ++cur_face) {
             const auto& face = mesh->faces[cur_face];
             const auto& v0 = mesh->vertices[face.v0].position;
@@ -249,9 +116,7 @@ namespace btm {
 
             if (curvatures_calculated) {
                 const auto& c0 = mesh->vertex_curvatures[face.v0];
-                mdata.curvatures.push_back(colors[c0.curvature_map_value].x());
-                mdata.curvatures.push_back(colors[c0.curvature_map_value].y());
-                mdata.curvatures.push_back(colors[c0.curvature_map_value].z());
+                mdata.add_curvature(colors[c0.curvature_map_value]);
             }
 
             mdata.indices.push_back(static_cast<unsigned int>(index));
@@ -267,9 +132,7 @@ namespace btm {
 
             if (curvatures_calculated) {
                 const auto& c1 = mesh->vertex_curvatures[face.v1];
-                mdata.curvatures.push_back(colors[c1.curvature_map_value].x());
-                mdata.curvatures.push_back(colors[c1.curvature_map_value].y());
-                mdata.curvatures.push_back(colors[c1.curvature_map_value].z());
+                mdata.add_curvature(colors[c1.curvature_map_value]);
             }
 
             mdata.indices.push_back(static_cast<unsigned int>(index));
@@ -285,28 +148,15 @@ namespace btm {
 
             if (curvatures_calculated) {
                 const auto& c2 = mesh->vertex_curvatures[face.v2];
-                mdata.curvatures.push_back(colors[c2.curvature_map_value].x());
-                mdata.curvatures.push_back(colors[c2.curvature_map_value].y());
-                mdata.curvatures.push_back(colors[c2.curvature_map_value].z());
+                mdata.add_curvature(colors[c2.curvature_map_value]);
             }
 
             mdata.indices.push_back(static_cast<unsigned int>(index));
             ++index;
         }
-        mdata.num_vertices = mdata.vertices.size();
-        mdata.num_normals = mdata.normals.size();
+        mdata.num_vertices = mdata.vertices.size()/3;
+        mdata.num_normals = mdata.normals.size()/3;
         mdata.num_indices = mdata.indices.size();
-        mdata.num_curvatures = mdata.curvatures.size();
+        mdata.num_curvatures = mdata.curvatures.size()/3;
     }
-
-
-
-    /**
-     * @brief Creates a simple mesh representing the UCS (Universal Coordinate System).
-     * @return Pointer to the created gl_mesh object.
-     */
-    gl_mesh* create_UCS_mesh();
-
 }
-
-#endif // __gl_mesh_h__

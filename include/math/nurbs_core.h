@@ -1,5 +1,4 @@
-#ifndef __nurbs_core_h__
-#define __nurbs_core_h__
+#pragma once
 
 #include "vector.h"
 #include "mesh.h"
@@ -332,5 +331,3 @@ namespace btm {
     }
 
 } // namespace btm
-
-#endif // __nurbs_core_h__

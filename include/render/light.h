@@ -1,5 +1,4 @@
-#ifndef __light_h__
-#define __light_h__
+#pragma once
 
 #include "vector.h"
 #include "shaders.h"
@@ -47,10 +46,9 @@ namespace btm {
         }
 
         void apply(gl_shader* shdr) {
-            shdr->set_vec3("light_position", position);
-            shdr->set_vec3("light_direction", direction);
-            shdr->set_vec3("light_color", color);
+            shdr->set_uniform("light_position", position);
+            shdr->set_uniform("light_direction", direction);
+            shdr->set_uniform("light_color", color);
         }
     };
 }
-#endif // __light_h__

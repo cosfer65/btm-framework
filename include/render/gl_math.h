@@ -1,5 +1,4 @@
-#ifndef __gl_math_h__
-#define __gl_math_h__
+#pragma once
 
 #include "vector.h"
 namespace btm {
@@ -83,5 +82,3 @@ namespace btm {
      */
     fmat4 ortho(float l, float r, float b, float t, float n, float f);
 }
-
-#endif // __gl_math_h__

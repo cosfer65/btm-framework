@@ -1,5 +1,4 @@
-#ifndef __material_h__
-#define __material_h__
+#pragma once
 
 #include "vector.h"
 #include "shaders.h"
@@ -158,24 +157,22 @@ namespace btm {
          */
         void apply(gl_shader* shdr)
         {
-            shdr->set_vec3("mat.ambient", ambient);
-            shdr->set_vec3("mat.diffuse", diffuse);
-            shdr->set_vec3("mat.specular", specular);
-            shdr->set_float("mat.shine", shine);
+            shdr->set_uniform("mat.ambient", ambient);
+            shdr->set_uniform("mat.diffuse", diffuse);
+            shdr->set_uniform("mat.specular", specular);
+            shdr->set_uniform("mat.shine", shine);
             if (diffuse_index >= 0)
             {
-                shdr->set_int("mat.diffuse_map", diffuse_index); // GL_TEXTURE0=0...
+                shdr->set_uniform("mat.diffuse_map", diffuse_index); // GL_TEXTURE0=0...
                 glActiveTexture(GL_TEXTURE0 + diffuse_index);
                 glBindTexture(GL_TEXTURE_2D, diffuse_map);
             }
             if (specular_index >= 0)
             {
-                shdr->set_int("mat.specular_map", specular_index); // GL_TEXTURE0=0...
+                shdr->set_uniform("mat.specular_map", specular_index); // GL_TEXTURE0=0...
                 glActiveTexture(GL_TEXTURE0 + specular_index);
                 glBindTexture(GL_TEXTURE_2D, specular_map);
             }
         }
     };
 }
-
-#endif // __material_h__

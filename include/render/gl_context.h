@@ -1,5 +1,4 @@
-#ifndef __gl_context_h__
-#define __gl_context_h__
+#pragma once
 
 #include <windows.h>
 
@@ -23,7 +22,3 @@ namespace btm
         int& height() { return m_height; }
     };
 }
-
-
-
-#endif //__gl_context_h__

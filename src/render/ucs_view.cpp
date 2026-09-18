@@ -17,7 +17,7 @@ namespace btm {
     /// - `m_ucs`: the actual UCS `gl_prim` (e.g., axis triad).
     struct UCS_view_private {
         std::unique_ptr<gl_camera> m_cam;                ///< gl_camera for scene viewing
-        std::unique_ptr<gl_shader> m_shader;             ///< Shader program for rendering
+        gl_shader* m_shader;             ///< Shader program for rendering
 
         std::unique_ptr<gl_light> m_light;               ///< Dedicated light for the UCS widget
         std::unique_ptr<gl_prim> m_ucs;                  ///< User coordinate system visualization
@@ -42,6 +42,30 @@ namespace btm {
         delete m_private_data;
     }
 
+    // leep these shaders sources here to minimize dependencies ftom external files
+    static const char* ucs_vertex_shader = {
+        "#version 330 core\n\
+        layout(location = 0) in vec3 aPos;\n\
+        layout(location = 2) in vec3 aColor;\n\
+        uniform mat4 model;\n\
+        uniform mat4 view;\n\
+        uniform mat4 projection;\n\
+        out vec3 oColor;\n\
+        void main(){\n\
+            gl_Position = projection * view * model * vec4(aPos, 1.0);\n\
+            oColor = aColor;\n\
+        }"
+    };
+    static const char* ucs_fragment_shader = {
+        "#version 330 core\n\
+        in vec3 oColor;\n\
+        out vec4 color;\n\
+        uniform vec3 object_color;\n\
+        void main() {\n\
+            color = vec4(oColor,1);\n\
+        }"
+    };
+
     /// @brief Initializes the UCS view resources (projection, camera, light, shader, and UCS).
     ///
     /// This must be called once before any calls to `render()`. It:
@@ -52,15 +76,7 @@ namespace btm {
     /// - Creates and positions the UCS primitive at the world origin with a default scale.
     void UCS_view::initialize() {
         m_private_data->m_light.reset(new gl_light());
-        // m_private_data->m_light->set_position(fvec3(-3000, 3000, 3000));
-        // m_private_data->m_light->set_ambient(fvec3(1, 1, 1));
-        // m_private_data->m_light->set_diffuse(fvec3(1, 1, 1));
-        // m_private_data->m_light->set_specular(fvec3(1, 1, 1));
-
-        m_private_data->m_shader.reset(new gl_shader);
-        m_private_data->m_shader->add_file(GL_VERTEX_SHADER, "resources/shaders/VertexShader.glsl");
-        m_private_data->m_shader->add_file(GL_FRAGMENT_SHADER, "resources/shaders/generic_FragmentShader.glsl");
-        m_private_data->m_shader->load();
+        m_private_data->m_shader = create_shader_s(ucs_vertex_shader, ucs_fragment_shader);
 
         m_private_data->m_ucs.reset(create_UCS());
         m_private_data->m_ucs->move_to(0, 0, 0);
@@ -77,12 +93,10 @@ namespace btm {
     void UCS_view::render() {
         m_private_data->m_cam->set_viewport();
         m_private_data->m_shader->use();
-        m_private_data->m_light->apply(m_private_data->m_shader.get());
-        // fmat4 cam_matrix = m_private_data->m_cam->perspective();
-        // m_private_data->m_shader->set_mat4("camera", cam_matrix);
-        m_private_data->m_cam->apply(m_private_data->m_shader.get());
+        m_private_data->m_light->apply(m_private_data->m_shader);
+        m_private_data->m_cam->apply(m_private_data->m_shader);
         m_private_data->m_ucs->view_matrix = m_rotation; // apply user rotation
-        m_private_data->m_ucs->render(m_private_data->m_shader.get());
+        m_private_data->m_ucs->render(m_private_data->m_shader);
         m_private_data->m_shader->end();
     }
 

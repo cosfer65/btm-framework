@@ -1,5 +1,4 @@
-#ifndef __geom_h__
-#define __geom_h__
+#pragma once
 
 #include "algebra.h"
 #include "base_definitions.h"
@@ -249,5 +248,3 @@ namespace btm {
         return true;
     }
 } // namespace btm
-
-#endif // __geom_h__
